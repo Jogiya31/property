@@ -482,6 +482,25 @@
         </div>
     </div>
 
+    <div class="modal fade success-state-modal" id="successModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog success-state-dialog" role="document">
+            <div class="modal-content success-state-content">
+                <button type="button" class="success-state-close" data-dismiss="modal" aria-label="Close">&times;</button>
+                <div class="success-state-hero">
+                    <span class="success-state-check" aria-hidden="true"></span>
+                </div>
+                <div class="success-state-body">
+                    <h2>Great!</h2>
+                    <p id="successMessage" class="success-state-message">Form submitted successfully.</p>
+                    <p id="successReference" class="success-state-reference"></p>
+                    <a href="requestLists.php" class="success-state-action">
+                        Go To Request List <span aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <?php require 'footer.php'; ?>
     <script src="../js/movable.js"></script>
 </body>

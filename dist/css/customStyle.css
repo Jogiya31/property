@@ -522,6 +522,149 @@
     margin-top: 40px;
 }
 
+.success-state-dialog {
+    width: calc(100% - 32px);
+    max-width: 500px;
+    margin: 30px auto;
+    position: relative;
+    top: 30%;
+    transform: translateY(-50%) !important;
+}
+
+.success-state-content {
+    border: 0;
+    border-radius: 4px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+}
+
+.success-state-close {
+    position: absolute;
+    top: 21px;
+    right: 18px;
+    z-index: 2;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 30px;
+    line-height: 22px;
+    font-weight: 700;
+    padding: 0;
+}
+
+.success-state-close:hover,
+.success-state-close:focus {
+    color: #ffffff;
+    outline: none;
+}
+
+.success-state-hero {
+    min-height: 165px;
+    background: #49c8a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-state-check {
+    width: 96px;
+    height: 96px;
+    border: 5px solid #ffffff;
+    border-radius: 50%;
+    position: relative;
+    display: inline-block;
+}
+
+.success-state-check::after {
+    content: "";
+    position: absolute;
+    left: 25px;
+    top: 27px;
+    width: 39px;
+    height: 22px;
+    border-left: 6px solid #ffffff;
+    border-bottom: 6px solid #ffffff;
+    transform: rotate(-45deg);
+}
+
+.success-state-body {
+    background: #ffffff;
+    text-align: center;
+    padding: 26px 28px 36px;
+}
+
+.success-state-body h2 {
+    margin: 0 0 14px;
+    color: #344264;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.1;
+}
+
+.success-state-message {
+    margin: 0;
+    color: #263a5f;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.success-state-reference {
+    margin: 8px 0 0;
+    color: #263a5f;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.success-state-action {
+    display: inline-block;
+    margin-top: 28px;
+    min-width: 180px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: #f5b400;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+}
+
+.success-state-action:hover,
+.success-state-action:focus {
+    background: #e5a700;
+    color: #ffffff;
+    text-decoration: none;
+    outline: none;
+}
+
+@media (max-width: 480px) {
+    .success-state-hero {
+        min-height: 140px;
+    }
+
+    .success-state-check {
+        width: 82px;
+        height: 82px;
+    }
+
+    .success-state-check::after {
+        left: 21px;
+        top: 23px;
+        width: 33px;
+        height: 19px;
+    }
+
+    .success-state-body {
+        padding: 24px 20px 32px;
+    }
+
+    .success-state-body h2 {
+        font-size: 32px;
+    }
+}
+
 
 @media print {
 

@@ -1832,10 +1832,15 @@ function submitForm() {
         // IMPORTANT: clear draft after final submit
         localStorage.removeItem("draftId");
 
-        sessionStorage.setItem("alertMsg", "Form submitted successfully!");
-        showAlert("Form submitted successfully!", "success");
+        const modal = $("#successModal");
+        const referenceNo = json?.Data?.reference_no;
+        modal.find("#successMessage").text("Form submitted successfully.");
+        modal.find("#successReference")
+          .text(referenceNo ? `Reference Number: ${referenceNo}` : "")
+          .toggle(Boolean(referenceNo));
 
-        window.location.href = "requestLists.php";
+        modal.modal("show");
+
       } else {
         const errorMessage = json.message || json.error || "Submission failed";
 
@@ -1847,6 +1852,7 @@ function submitForm() {
     }
   });
 }
+
 function saveDraft() {
   const form = document.getElementById("form1");
   if (!form) {

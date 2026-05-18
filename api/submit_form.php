@@ -149,7 +149,7 @@ try {
             ":current_role_name" => $currentRole,
             ":last_action" => $lastAction,
             ":id" => $editFormId,
-            
+
         ]);
 
         $stmtDeleteApplicants = $conn->prepare("
@@ -465,12 +465,28 @@ try {
 
     $conn->commit();
 
+    /* =====================================================
+    FETCH COMPLETE FORM DETAILS
+    ===================================================== */
+
+    /* FORM */
+    $stmtForm = $conn->prepare("
+        SELECT *
+        FROM forms
+        WHERE id = :form_id
+    ");
+    $stmtForm->execute([
+        ':form_id' => $formId
+    ]);
+
+    $formData = $stmtForm->fetch(PDO::FETCH_ASSOC);
+
     echo json_encode([
         "success" => true,
         "message" => $editFormId
             ? ($form_status === 0 ? "Draft updated successfully" : "Form updated and submitted successfully")
             : ($form_status === 0 ? "Draft saved successfully" : "Form submitted successfully"),
-        "form_id" => $formId,
+        "Data" => $formData,
         "status" => $status
     ]);
 } catch (Exception $e) {
