@@ -151,5 +151,3 @@ $mpdf->Output('property_report.pdf', 'D'); // Download the PDF
 - **mPDF Documentation:** https://mpdf.github.io/
 - **PHP Official Docs:** https://www.php.net/manual/
 
-## License
-See LICENSE file in the root directory.
