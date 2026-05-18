@@ -1053,8 +1053,8 @@
                 const json = await res.json();
 
                 if (json.success) {
-                    sessionStorage.setItem("alertMsg", "Reverted successfully!");
-                    showAlert("Reverted successfully!", "success");
+                    sessionStorage.setItem("alertMsg", "Rejected successfully!");
+                    showAlert("Rejected successfully!", "success");
                     setTimeout(() => {
                         window.location.href = "inbox.php";
                     }, 3000);
