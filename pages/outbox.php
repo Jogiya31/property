@@ -76,15 +76,11 @@
 
         async function loadAllData() {
             try {
-                let data = {
-                    req_type: 'outbox',
-                }
-                const res = await fetch('../api/get_allData.php', {
+                const res = await fetch('../api/get_outbox.php', {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(data)
+                    }
                 });
                 const json = await res.json();
                 allData = json.data || [];

@@ -418,6 +418,12 @@
                 document.getElementById('status').classList.add('d-none')
             }
 
+            if (sessionStorage.getItem('designation') === "DDG" || sessionStorage.getItem('designation') === "DG") {
+                document.getElementById('correctOM-container').classList.add('d-none')
+                document.getElementById('forwardbtn').classList.add('d-none')
+                document.getElementById('forwardId').classList.add('d-none')
+            }
+
             populateEmployeeDropdown();
 
         }

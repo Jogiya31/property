@@ -485,7 +485,7 @@
     <div class="modal fade success-state-modal" id="successModal" tabindex="-1" role="dialog">
         <div class="modal-dialog success-state-dialog" role="document">
             <div class="modal-content success-state-content">
-                <button type="button" class="success-state-close" data-dismiss="modal" aria-label="Close">&times;</button>
+                <button type="button" class="success-state-close" data-dismiss="modal" aria-label="Close" onclick="window.location.href='requestLists.php'">&times;</button>
                 <div class="success-state-hero">
                     <span class="success-state-check" aria-hidden="true"></span>
                 </div>

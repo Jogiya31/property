@@ -125,6 +125,7 @@ try {
                 acquisition_gift = :acquisition_gift,
                 other_relevant = :other_relevant,
                 status = :status,
+                forward_to:forward_to,
                 updated_by = :uid,
                 updated_at = NOW(),
                 current_holder = :current_holder,
@@ -144,6 +145,7 @@ try {
             ":acquisition_gift" => $acquisition_gift,
             ":other_relevant" => $other_relevant,
             ":status" => $status,
+            ":forward_to" => $currentHolder,
             ":uid" => $uid,
             ":current_holder" => $currentHolder,
             ":current_role_name" => $currentRole,
@@ -194,6 +196,7 @@ try {
                 acquisition_gift,
                 other_relevant,
                 status,
+                forward_to,
                 current_holder,
                 current_role_name,
                 last_action
@@ -212,6 +215,7 @@ try {
                 :acquisition_gift,
                 :other_relevant,
                 :status,
+                :forward_to,
                 :current_holder,
                 :current_role_name,
                 :last_action
@@ -238,6 +242,7 @@ try {
             ":other_relevant" => $other_relevant,
 
             ":status" => $status,
+            ":forward_to" => $currentHolder,
 
             ":current_holder" => $currentHolder,
             ":current_role_name" => $currentRole,

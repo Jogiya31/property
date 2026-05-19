@@ -167,6 +167,7 @@ try {
 
         // On rejection, return the form to the original form owner (forms.uid)
         $currentHolderId = $form['uid'];
+        $forward_to_id = $form['uid'];
 
         $userStmt = $conn->prepare("
             SELECT username
