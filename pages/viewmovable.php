@@ -217,44 +217,146 @@
                             </div>
                         </div>
                     </div>
-                    <div class="box box-primary" id="status">
+                    <div class="box box-primary status d-none">
+
                         <div class="box-header with-border">
-                            <h4 class="box-title"> Action / Remarks</h4>
+
+                            <h4 class="box-title">
+                                Action / Remarks
+                            </h4>
+
                         </div>
+
                         <div class="box-body">
 
+                            <!-- CORRECT OM -->
+
                             <div class="row">
-                                <div class="col-md-3" id="correctOM-container">
-                                    <input class="form-check-input" type="checkbox" name="correctOM" id="correctOM"> OM found correct.
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 " id='remark'>
-                                    <div class="form-group">
-                                        <label>Remarks:</label>
-                                        <textarea id="remarks" name="remarks" class="form-control"></textarea>
-                                    </div>
+
+                                <div
+                                    class="col-md-3 d-none"
+                                    id="correctOM-container">
+
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="correctOM"
+                                        id="correctOM">
+
+                                    OM found correct.
+
                                 </div>
 
-                                <div class="col-md-6" id="forwardId">
-                                    <div class="form-group">
-                                        <label>Select Employee to forward:</label>
-                                        <select id="employee" class="form-control" name="employee">
-                                            <option value="">Select...</option>
-                                        </select>
-                                    </div>
-                                </div>
                             </div>
-                            <div class="row mt-4">
-                                <div class="col-md-12 d-flex justify-content-center gap-2">
-                                    <button type="button" class="btn btn-primary" id="generatebtn" onclick="generateCertificate()">Generate Certificate</button>
-                                    <button type="button" class="btn btn-danger" id="revertbtn" onclick="handleRevert()">Reject</button>
-                                    <button type="button" class="btn btn-success" id="forwardbtn" onclick="handleforward()">Forward</button>
-                                    <button type="button" class="btn btn-primary" id="OMbtn" onclick="openMemo()">View OM</button>
+
+                            <!-- REMARKS + FORWARD -->
+
+                            <div class="row">
+
+                                <div class="col-md-6 d-none" id="remark">
+
+                                    <div class="form-group">
+
+                                        <label>Remarks:</label>
+
+                                        <textarea
+                                            id="remarks"
+                                            name="remarks"
+                                            class="form-control"></textarea>
+
+                                    </div>
+
                                 </div>
+
+                                <!-- FORWARD SECTION -->
+
+                                <div
+                                    class="col-md-6 d-none"
+                                    id="forwardSection">
+
+                                    <div class="form-group">
+
+                                        <label>
+                                            Select Employee to forward:
+                                        </label>
+
+                                        <select
+                                            id="employee"
+                                            class="form-control"
+                                            name="employee">
+
+                                            <option value="">
+                                                Select...
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- BUTTONS -->
+
+                            <div class="row mt-4">
+
+                                <div class="col-md-12 d-flex justify-content-center gap-2">
+
+                                    <!-- GENERATE -->
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary d-none"
+                                        id="generatebtn"
+                                        onclick="generateCertificate()">
+
+                                        Generate Certificate
+
+                                    </button>
+
+                                    <!-- REJECT -->
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger d-none"
+                                        id="revertbtn"
+                                        onclick="handleRevert()">
+
+                                        Reject
+
+                                    </button>
+
+                                    <!-- FORWARD -->
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-success d-none"
+                                        id="forwardbtn"
+                                        onclick="handleforward()">
+
+                                        Forward
+
+                                    </button>
+
+                                    <!-- OM -->
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary"
+                                        id="OMbtn"
+                                        onclick="openMemo()">
+
+                                        View OM
+
+                                    </button>
+
+                                </div>
+
                             </div>
 
                         </div>
+
                     </div>
 
                 </form>
@@ -365,89 +467,258 @@
 
         function prefillForm(data) {
 
-            // simple fields
-            document.querySelector('[name="username"]').value = data.user_details.username ?? "";
-            document.querySelector('[name="designation"]').value = data.user_details.designation ?? "";
-            document.querySelector('[name="service"]').value = data.user_details.service ?? "";
-            document.querySelector('[name="emp_code"]').value = data.user_details.emp_code ?? "";
-            document.querySelector('[name="payscale"]').value = data.user_details.payscale ?? "";
-            document.querySelector('[name="purpose"]').value = data.purpose ?? "";
-            document.querySelector('[name="acquisition_disposed"]').value = data.acquired_disposed ?? "";
-            document.querySelector('[name="date_acquisition_disposed"]').value = data.date_acquisition_disposed ?? "";
-            document.querySelector('[name="mode_disposal"]').value = data.mode_disposal ?? "";
-            document.querySelector('[name="mode_acquisition"]').value = data.mode_acquisition ?? "";
-            document.querySelector('[name="acquisition_gift"]').value = data.acquisition_gift ?? "";
-            document.querySelector('[name="other_relevant"]').value = data.other_relevant ?? "";
+            /* =========================================
+               USER DETAILS
+            ========================================= */
+
+            document.querySelector('[name="username"]').value =
+                data.owner_user?.username ?? "";
+
+            document.querySelector('[name="designation"]').value =
+                data.owner_user?.designation ?? "";
+
+            document.querySelector('[name="service"]').value =
+                data.owner_user?.service ?? "";
+
+            document.querySelector('[name="emp_code"]').value =
+                data.owner_user?.emp_code ?? "";
+
+            document.querySelector('[name="payscale"]').value =
+                data.owner_user?.payscale ?? "";
+
+            /* =========================================
+               FORM DETAILS
+            ========================================= */
+
+            document.querySelector('[name="purpose"]').value =
+                data.purpose ?? "";
+
+            document.querySelector('[name="acquisition_disposed"]').value =
+                data.acquired_disposed ?? "";
+
+            document.querySelector('[name="date_acquisition_disposed"]').value =
+                data.date_acquisition_disposed ?? "";
+
+            document.querySelector('[name="mode_disposal"]').value =
+                data.mode_disposal ?? "";
+
+            document.querySelector('[name="mode_acquisition"]').value =
+                data.mode_acquisition ?? "";
+
+            document.querySelector('[name="acquisition_gift"]').value =
+                data.acquisition_gift ?? "";
+
+            document.querySelector('[name="other_relevant"]').value =
+                data.other_relevant ?? "";
+
+            /* =========================================
+               OTHER RELEVANT
+            ========================================= */
 
             if (!data.other_relevant) {
-                document.getElementById("other_relevant").classList.add('d-none')
+
+                document
+                    .getElementById("other_relevant")
+                    ?.classList.add('d-none');
+
+            } else {
+
+                document
+                    .getElementById("other_relevant")
+                    ?.classList.remove('d-none');
             }
 
-            if (data.acquired_disposed === 'disposal') {
-                document.getElementById('mode_acquisition').classList.add('d-none');
-                document.getElementById('mode_disposal').classList.remove('d-none')
+            /* =========================================
+               ACQUISITION / DISPOSAL
+            ========================================= */
+
+            if (data.acquired_disposed === 'disposed') {
+
+                document
+                    .getElementById('mode_acquisition')
+                    ?.classList.add('d-none');
+
+                document
+                    .getElementById('mode_disposal')
+                    ?.classList.remove('d-none');
+
             } else {
-                document.getElementById('mode_acquisition').classList.remove('d-none');
-                document.getElementById('mode_disposal').classList.add('d-none')
+
+                document
+                    .getElementById('mode_acquisition')
+                    ?.classList.remove('d-none');
+
+                document
+                    .getElementById('mode_disposal')
+                    ?.classList.add('d-none');
             }
 
-            if (data.acquisition_gift !== '') {
-                document.getElementById('acquisition_gift').classList.remove('d-none');
+            /* =========================================
+               GIFT
+            ========================================= */
+
+            if (
+                data.acquisition_gift &&
+                data.acquisition_gift.trim() !== ''
+            ) {
+
+                document
+                    .getElementById('acquisition_gift')
+                    ?.classList.remove('d-none');
+
             } else {
-                document.getElementById('acquisition_gift').classList.add('d-none');
+
+                document
+                    .getElementById('acquisition_gift')
+                    ?.classList.add('d-none');
             }
+
+            /* =========================================
+               PURPOSE
+            ========================================= */
 
             if (data.purpose === 'Sanction for transaction') {
-                document.getElementById('form2_inparts').classList.remove('d-none');
-                document.getElementById('form2_full').classList.add('d-none')
+
+                document
+                    .getElementById('form1_inparts')
+                    ?.classList.remove('d-none');
+
+                document
+                    .getElementById('form1_full')
+                    ?.classList.add('d-none');
+
             } else {
-                document.getElementById('form2_inparts').classList.add('d-none');
-                document.getElementById('form2_full').classList.remove('d-none')
+
+                document
+                    .getElementById('form1_inparts')
+                    ?.classList.add('d-none');
+
+                document
+                    .getElementById('form1_full')
+                    ?.classList.remove('d-none');
             }
 
-            data.properties.forEach((property, index) => {
-                renderPropertyPreview(data.acquired_disposed, property, index);
+            /* =========================================
+               PROPERTIES
+            ========================================= */
+
+            const previewContainer =
+                document.getElementById('propertyPreviewContainer');
+
+            if (previewContainer) {
+                previewContainer.innerHTML = '';
+            }
+
+            (data.properties || []).forEach((property, index) => {
+
+                renderPropertyPreview(
+                    data.acquired_disposed,
+                    property,
+                    index
+                );
             });
 
-            const correctOM = document.getElementById('correctOM');
-            correctOM.checked = Number(data.correctom) === 1;
-            // disable if prefilled
-            if (Number(data.correctom) === 1) {
-                correctOM.disabled = true;
+            /* =========================================
+               CORRECT OM
+            ========================================= */
+
+            const correctOM =
+                document.getElementById('correctOM');
+
+            if (correctOM) {
+
+                correctOM.checked =
+                    Number(data.correctom) === 1;
+
+                correctOM.disabled =
+                    Number(data.correctom) === 1;
+            }
+
+            /* =========================================
+               PERMISSIONS
+            ========================================= */
+
+            const permissions =
+                data.permissions || {};
+
+            const isFormOwner =
+                Boolean(permissions.is_form_owner);
+
+            const isCurrentHolder =
+                Boolean(permissions.is_current_holder);
+
+            const isLatestSender =
+                Boolean(permissions.is_latest_sender);
+
+            const canPullback =
+                Boolean(permissions.can_pullback);
+
+            const canTakeAction =
+                Boolean(permissions.can_take_action);
+
+            /* =========================================
+               ELEMENTS
+            ========================================= */
+            const forwardBtn =
+                document.getElementById('forwardbtn');
+
+            const forwardSection =
+                document.getElementById('forwardSection');
+
+            const revertBtn =
+                document.getElementById('revertbtn');
+
+            const generateBtn =
+                document.getElementById('generatebtn');
+
+            const statusSection =
+                document.querySelector('.status');
+
+            /* =====================================
+                LOGGED IN USER
+            ===================================== */
+
+            const loggedInUid =
+                Number(sessionStorage.getItem('uid'));
+
+            const loggedInRole =
+                sessionStorage.getItem('designation');
+
+            /* =====================================
+               RESPONSE USERS
+            ===================================== */
+
+            const formOwnerId =
+                Number(data.owner_user?.uid);
+
+            const currentHolderId =
+                Number(data.current_holder?.uid);
+
+            const fromUserId =
+                Number(data.latest_movement?.from_user_id);
+
+
+            statusSection?.classList.remove('d-none');
+
+            /* =====================================
+                GENERATE BUTTON
+                ONLY DDG / DG
+            ===================================== */
+
+            if (
+                loggedInRole === 'DDG' ||
+                loggedInRole === 'DG'
+            ) {
+
+                generateBtn?.classList.remove('d-none');
+
             } else {
-                if (sessionStorage.getItem('designation') === "DDG") {
-                    document.getElementById('correctOM-container').classList.add('d-none')
-                }
+
+                generateBtn?.classList.add('d-none');
             }
 
-            correctOM.checked = data.correctom == 1;
-
-            if (sessionStorage.getItem('designation') === 'SO') {
-                document.getElementById('generatebtn').classList.add('d-none');
-                document.getElementById('correctOM-container').classList.add('d-none')
-            }
-
-            if (sessionStorage.getItem('designation') == 'DH') {
-                document.getElementById('generatebtn').classList.add('d-none');
-                document.getElementById('revertbtn').classList.add('d-none');
-            }
-
-            if (sessionStorage.getItem('designation') == 'JD') {
-                document.getElementById('generatebtn').classList.add('d-none');
-            }
-
-            if (sessionStorage.getItem('username') === data?.user_details?.username) {
-                document.getElementById('status').classList.add('d-none')
-            }
-
-            if (sessionStorage.getItem('designation') === "DDG" || sessionStorage.getItem('designation') === "DG") {
-                document.getElementById('correctOM-container').classList.add('d-none')
-                document.getElementById('forwardbtn').classList.add('d-none')
-                document.getElementById('forwardId').classList.add('d-none')
-            }
 
             populateEmployeeDropdown();
-
         }
 
         async function generateCertificate() {

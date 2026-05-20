@@ -134,7 +134,7 @@
 
                     if (
                         f.is_locked == true &&
-                        parseInt(f.locked_by) !== parseInt(<?= $_SESSION['uid'] ?>)
+                        parseInt(f.locked_by) !== parseInt(sessionStorage.getItem("uid"))
                     ) {
 
                         disabled = "disabled";
@@ -154,7 +154,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-sm btn-primary view-btn"
+                                class="btn btn-primary view-btn"
                                 ${disabled}
                                 onclick="openForm(${f.id}, 'viewImmovable.php')"
                             >
@@ -168,7 +168,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-sm btn-primary view-btn"
+                                class="btn btn-primary view-btn"
                                 ${disabled}
                                 onclick="openForm(${f.id}, 'viewmovable.php')"
                             >
@@ -184,7 +184,7 @@
                     <tr>
                         <td><strong>${f.reference_no ?? ''}</strong></td>
 
-                        <td>${f.user?.username ?? ''}</td>
+                        <td>${f.form_owner?.username ?? ''}</td>
 
                         <td>${f.form_type ?? ''}</td>
 
@@ -196,17 +196,17 @@
 
                         <td class="text-center">
                             <span class="badge ${
-                                f.status === 'Pending' ? 'bg-yellow' :
-                                f.status === 'Forwarded' ? 'bg-aqua' :
-                                f.status === 'Rejected' ? 'bg-red' :
-                                f.status === 'Draft' ? 'bg-gray' : ''
+                                f.workflow?.status === 'Pending' ? 'bg-yellow' :
+                                f.workflow?.status === 'Forwarded' ? 'bg-aqua' :
+                                f.workflow?.status === 'Rejected' ? 'bg-red' :
+                                f.workflow?.status === 'Draft' ? 'bg-gray' : ''
                             }">
-                                ${f.status ?? ''}
+                                ${f.workflow?.status ?? ''}
                             </span>
                         </td>
 
                         <td class="text-center">
-                            ${f.created_at ? f.created_at.split(" ")[0] : ''}
+                            ${f.timestamps?.created_at ? f.timestamps.created_at.split(" ")[0] : ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>

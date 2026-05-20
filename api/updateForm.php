@@ -1,6 +1,7 @@
 <?php
 
 session_start();
+
 include '../connection/db.php';
 
 header("Content-Type: application/json");
@@ -35,6 +36,7 @@ if (!$uid) {
         "success" => false,
         "error" => "User not logged in"
     ]);
+
     exit;
 }
 
@@ -44,6 +46,7 @@ if (!$id) {
         "success" => false,
         "error" => "Invalid Form ID"
     ]);
+
     exit;
 }
 
@@ -53,6 +56,26 @@ if (!$action) {
         "success" => false,
         "error" => "Action is required"
     ]);
+
+    exit;
+}
+
+/* =====================================================
+   ALLOWED ACTIONS
+===================================================== */
+
+$allowedActions = [
+    'Forwarded',
+    'Rejected'
+];
+
+if (!in_array($action, $allowedActions)) {
+
+    echo json_encode([
+        "success" => false,
+        "error" => "Invalid action"
+    ]);
+
     exit;
 }
 
@@ -93,14 +116,24 @@ try {
     }
 
     /* =====================================================
-       CHECK CURRENT HOLDER ACCESS
+       PREVIOUS WORKFLOW STATE
     ====================================================== */
 
-    if (
-        $action !== 'Pullback' &&
-        (int)$form['current_holder'] !== (int)$uid
-    ) {
-        throw new Exception("You are not authorized to process this form");
+    $previousHolderId = $form['current_holder'];
+
+    $previousRoleName = $form['current_role_name'];
+
+    $previousStatus = $form['status'];
+
+    /* =====================================================
+       AUTHORIZATION
+    ====================================================== */
+
+    if ((int)$previousHolderId !== (int)$uid) {
+
+        throw new Exception(
+            "You are not authorized to process this form"
+        );
     }
 
     /* =====================================================
@@ -139,9 +172,9 @@ try {
 
     $newPhase = $form['current_phase'];
 
-    $currentHolderId = $form['current_holder'];
+    $newHolderId = $form['current_holder'];
 
-    $currentRoleName = $form['current_role_name'];
+    $newHolderRole = $form['current_role_name'];
 
     $lastAction = null;
 
@@ -150,10 +183,13 @@ try {
     $nextUserRole = null;
 
     $isLocked = false;
+
     $lockedBy = null;
+
     $lockedAt = null;
 
     $isOpened = false;
+
     $openedAt = null;
 
     /* =====================================================
@@ -163,11 +199,17 @@ try {
     if ($action === "Forwarded") {
 
         if (!$forward_to_id) {
-            throw new Exception("Please select employee to forward");
+
+            throw new Exception(
+                "Please select employee to forward"
+            );
         }
 
         if ($forward_to_id == $uid) {
-            throw new Exception("You cannot forward form to yourself");
+
+            throw new Exception(
+                "You cannot forward form to yourself"
+            );
         }
 
         $stmtNext = $conn->prepare("
@@ -187,7 +229,10 @@ try {
         $nextUser = $stmtNext->fetch(PDO::FETCH_ASSOC);
 
         if (!$nextUser) {
-            throw new Exception("Forward user not found");
+
+            throw new Exception(
+                "Forward user not found"
+            );
         }
 
         $nextUserName = $nextUser['username'];
@@ -203,17 +248,20 @@ try {
 
         $newStatus = "Forwarded";
 
-        $currentHolderId = $forward_to_id;
+        $newHolderId = $forward_to_id;
 
-        $currentRoleName = $nextUserRole;
+        $newHolderRole = $nextUserRole;
 
         $lastAction = "Forwarded";
 
         $isLocked = false;
+
         $lockedBy = null;
+
         $lockedAt = null;
 
         $isOpened = false;
+
         $openedAt = null;
     }
 
@@ -223,7 +271,7 @@ try {
 
     elseif ($action === "Rejected") {
 
-        $currentHolderId = $form['uid'];
+        $newHolderId = $form['uid'];
 
         $forward_to_id = $form['uid'];
 
@@ -238,32 +286,33 @@ try {
         ");
 
         $stmtOwner->execute([
-            ':uid' => $currentHolderId
+            ':uid' => $newHolderId
         ]);
 
         $ownerData = $stmtOwner->fetch(PDO::FETCH_ASSOC);
 
         if (!$ownerData) {
-            throw new Exception("Original owner not found");
+
+            throw new Exception(
+                "Original owner not found"
+            );
         }
 
-        $currentRoleName = $ownerData['designation'];
+        $newHolderRole = $ownerData['designation'];
 
         $newStatus = "Rejected";
 
         $lastAction = "Rejected";
 
         $isLocked = false;
+
         $lockedBy = null;
+
         $lockedAt = null;
 
         $isOpened = false;
+
         $openedAt = null;
-    }
-
-    else {
-
-        throw new Exception("Invalid action");
     }
 
     /* =====================================================
@@ -314,27 +363,47 @@ try {
 
     $stmtUpdate->bindValue(':forward_to', $forward_to_id);
 
-    $stmtUpdate->bindValue(':current_holder', $currentHolderId);
+    $stmtUpdate->bindValue(':current_holder', $newHolderId);
 
-    $stmtUpdate->bindValue(':current_role_name', $currentRoleName);
+    $stmtUpdate->bindValue(':current_role_name', $newHolderRole);
 
     $stmtUpdate->bindValue(':last_action', $lastAction);
 
-    $stmtUpdate->bindValue(':correctOM', $correctOM, PDO::PARAM_INT);
+    $stmtUpdate->bindValue(
+        ':correctOM',
+        $correctOM,
+        PDO::PARAM_INT
+    );
 
-    $stmtUpdate->bindValue(':is_locked', $isLocked, PDO::PARAM_BOOL);
+    $stmtUpdate->bindValue(
+        ':is_locked',
+        $isLocked,
+        PDO::PARAM_BOOL
+    );
 
     $stmtUpdate->bindValue(':locked_by', $lockedBy);
 
     $stmtUpdate->bindValue(':locked_at', $lockedAt);
 
-    $stmtUpdate->bindValue(':is_opened', $isOpened, PDO::PARAM_BOOL);
+    $stmtUpdate->bindValue(
+        ':is_opened',
+        $isOpened,
+        PDO::PARAM_BOOL
+    );
 
     $stmtUpdate->bindValue(':opened_at', $openedAt);
 
-    $stmtUpdate->bindValue(':updated_by', $uid, PDO::PARAM_INT);
+    $stmtUpdate->bindValue(
+        ':updated_by',
+        $uid,
+        PDO::PARAM_INT
+    );
 
-    $stmtUpdate->bindValue(':id', $id, PDO::PARAM_INT);
+    $stmtUpdate->bindValue(
+        ':id',
+        $id,
+        PDO::PARAM_INT
+    );
 
     $stmtUpdate->execute();
 
@@ -378,13 +447,13 @@ try {
 
         ':form_id' => $id,
 
-        ':from_user_id' => $uid,
+        ':from_user_id' => $previousHolderId,
 
-        ':from_role' => $currentUserRole,
+        ':from_role' => $previousRoleName,
 
-        ':to_user_id' => $currentHolderId,
+        ':to_user_id' => $newHolderId,
 
-        ':to_role' => $currentRoleName,
+        ':to_role' => $newHolderRole,
 
         ':action' => $lastAction,
 
@@ -453,13 +522,13 @@ try {
 
         ':action_by_role' => $currentUserRole,
 
-        ':action_to' => $currentHolderId,
+        ':action_to' => $newHolderId,
 
-        ':action_to_role' => $currentRoleName,
+        ':action_to_role' => $newHolderRole,
 
         ':field_name' => 'status',
 
-        ':old_value' => $form['status'],
+        ':old_value' => $previousStatus,
 
         ':new_value' => $newStatus,
 
@@ -480,21 +549,36 @@ try {
 
         "success" => true,
 
-        "message" => "Form " . strtolower($lastAction) . " successfully",
+        "message" => "Form " .
+            strtolower($lastAction) .
+            " successfully",
 
         "data" => [
 
             "form_id" => $id,
 
-            "status" => $newStatus,
+            "workflow" => [
 
-            "current_holder" => $currentHolderId,
+                "status" => $newStatus,
 
-            "current_role_name" => $currentRoleName,
+                "action" => $lastAction,
 
-            "forward_to" => $forward_to_id,
+                "phase" => $newPhase
+            ],
 
-            "action" => $lastAction
+            "sender" => [
+
+                "uid" => $previousHolderId,
+
+                "role" => $previousRoleName
+            ],
+
+            "receiver" => [
+
+                "uid" => $newHolderId,
+
+                "role" => $newHolderRole
+            ]
         ]
     ]);
 }
@@ -502,6 +586,7 @@ try {
 catch (Exception $e) {
 
     if ($conn->inTransaction()) {
+
         $conn->rollBack();
     }
 

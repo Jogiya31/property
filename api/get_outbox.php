@@ -18,100 +18,195 @@ try {
     $uid = $_SESSION['uid'] ?? null;
 
     if (!$uid) {
+
         throw new Exception("User not logged in");
     }
 
     /* =====================================================
-       GET OUTBOX DATA
+       OUTBOX QUERY
 
-       IMPORTANT:
-       We fetch ONLY latest movement of each form
-       sent by logged-in user
+       RULES:
+
+       1. Employee/Form Owner
+          -> can see all own forms
+
+       2. Any workflow user
+          -> can see forms forwarded by them
+
+       3. Revert allowed only for latest sender
     ====================================================== */
 
     $sql = "
-        SELECT
 
-            f.id,
-            f.reference_no,
-            f.form_type,
-            f.purpose,
-            f.acquired_disposed,
-            f.date_acquisition_disposed,
-            f.mode_acquisition,
-            f.mode_disposal,
+    SELECT
 
-            f.status,
-            f.current_phase,
+        f.id,
+        f.reference_no,
+        f.form_type,
+        f.purpose,
+        f.acquired_disposed,
+        f.date_acquisition_disposed,
+        f.mode_acquisition,
+        f.mode_disposal,
 
-            f.current_holder,
-            f.current_role_name,
+        f.status,
+        f.current_phase,
 
-            f.forward_to,
+        f.current_holder,
+        f.current_role_name,
 
-            f.last_action,
+        f.forward_to,
 
-            f.remarks,
+        f.last_action,
 
-            f.created_at,
-            f.updated_at,
+        f.remarks,
 
-            f.is_locked,
-            f.locked_by,
-            f.locked_at,
+        f.created_at,
+        f.updated_at,
 
-            f.is_opened,
-            f.opened_at,
+        f.is_locked,
+        f.locked_by,
+        f.locked_at,
 
-            owner.username AS form_username,
+        f.is_opened,
+        f.opened_at,
 
-            currentUser.username AS current_holder_name,
+        /* =========================================
+           FORM OWNER
+        ========================================= */
 
-            forwardUser.username AS forward_username,
+        owner.uid AS form_owner_uid,
+        owner.username AS form_owner_name,
 
-            lockUser.username AS locked_by_name,
+        /* =========================================
+           CURRENT HOLDER
+        ========================================= */
 
-            fm.id AS movement_id,
-            fm.action AS movement_action,
-            fm.created_at AS movement_date,
-            fm.to_user_id,
-            fm.from_user_id
+        currentUser.username AS current_holder_name,
 
-        FROM forms f
+        /* =========================================
+           FORWARDED USER
+        ========================================= */
 
-        INNER JOIN (
+        forwardUser.username AS forward_username,
 
-            SELECT DISTINCT ON (form_id)
+        /* =========================================
+           LOCK USER
+        ========================================= */
 
-                id,
-                form_id,
-                from_user_id,
-                to_user_id,
-                action,
-                created_at
+        lockUser.username AS locked_by_name,
 
-            FROM form_movements
+        /* =========================================
+           USER SENT MOVEMENT
+        ========================================= */
 
-            WHERE from_user_id = :uid
+        sentMovement.id AS sent_movement_id,
+        sentMovement.action AS sent_action,
+        sentMovement.created_at AS sent_date,
 
-            ORDER BY form_id, id DESC
+        sentMovement.from_user_id AS sender_id,
+        sentMovement.to_user_id AS receiver_id,
 
-        ) fm
-            ON fm.form_id = f.id
+        senderUser.username AS sender_name,
+        receiverUser.username AS receiver_name,
 
-        LEFT JOIN users owner
-            ON owner.uid = f.uid::INTEGER
+        /* =========================================
+           LATEST MOVEMENT
+        ========================================= */
 
-        LEFT JOIN users currentUser
-            ON currentUser.uid = f.current_holder
+        latestMovement.id AS latest_movement_id,
 
-        LEFT JOIN users forwardUser
-            ON forwardUser.uid = f.forward_to
+        latestMovement.from_user_id AS latest_sender_id,
 
-        LEFT JOIN users lockUser
-            ON lockUser.uid = f.locked_by
+        latestMovement.to_user_id AS latest_receiver_id,
 
-        ORDER BY f.id DESC
+        latestMovement.action AS latest_action
+
+    FROM forms f
+
+    /* =========================================
+       LATEST MOVEMENT OF CURRENT USER
+    ========================================= */
+
+    LEFT JOIN LATERAL (
+
+        SELECT sm.*
+
+        FROM form_movements sm
+
+        WHERE
+            sm.form_id = f.id
+            AND sm.from_user_id = :uid
+
+        ORDER BY sm.id DESC
+
+        LIMIT 1
+
+    ) sentMovement ON true
+
+    /* =========================================
+       LATEST MOVEMENT OF FORM
+    ========================================= */
+
+    LEFT JOIN LATERAL (
+
+        SELECT lm.*
+
+        FROM form_movements lm
+
+        WHERE lm.form_id = f.id
+
+        ORDER BY lm.id DESC
+
+        LIMIT 1
+
+    ) latestMovement ON true
+
+    /* =========================================
+       USERS
+    ========================================= */
+
+    LEFT JOIN users owner
+        ON owner.uid = f.uid::INTEGER
+
+    LEFT JOIN users currentUser
+        ON currentUser.uid = f.current_holder
+
+    LEFT JOIN users forwardUser
+        ON forwardUser.uid = f.forward_to
+
+    LEFT JOIN users lockUser
+        ON lockUser.uid = f.locked_by
+
+    LEFT JOIN users senderUser
+        ON senderUser.uid = sentMovement.from_user_id
+
+    LEFT JOIN users receiverUser
+        ON receiverUser.uid = sentMovement.to_user_id
+
+    /* =========================================
+       OUTBOX CONDITIONS
+    ========================================= */
+
+    WHERE (
+
+        /* =========================================
+           FORM OWNER
+        ========================================= */
+
+        f.uid::INTEGER = :uid
+
+        OR
+
+        /* =========================================
+           USER HAS FORWARDED FORM
+        ========================================= */
+
+        sentMovement.id IS NOT NULL
+
+    )
+
+    ORDER BY f.id DESC
     ";
 
     $stmt = $conn->prepare($sql);
@@ -127,25 +222,25 @@ try {
     foreach ($rows as $row) {
 
         /* =====================================================
-           CAN PULLBACK LOGIC
-
-           Allow pullback ONLY IF:
-
-           1. Current status = Forwarded
-           2. Current holder = forwarded user
-           3. File not opened
-           4. File not locked
+           CAN PULLBACK
         ====================================================== */
 
         $canPullBack = false;
 
         if (
+
             $row['status'] === 'Forwarded'
-            && (int)$row['from_user_id'] === (int)$uid
-            && (int)$row['current_holder'] === (int)$row['forward_to']
+
+            && (int)$row['latest_sender_id'] === (int)$uid
+
+            && (int)$row['latest_receiver_id'] === (int)$row['current_holder']
+
             && !(bool)$row['is_opened']
+
             && !(bool)$row['is_locked']
+
         ) {
+
             $canPullBack = true;
         }
 
@@ -156,25 +251,24 @@ try {
         $isLockedByOther = false;
 
         if (
+
             (bool)$row['is_locked']
+
             && (int)$row['locked_by'] !== (int)$uid
+
         ) {
+
             $isLockedByOther = true;
         }
 
         /* =====================================================
-           FILE STATUS LABEL
+           STATUS LABEL
         ====================================================== */
 
         $statusLabel = $row['status'];
 
-        if ((bool)$row['is_locked']) {
-
-            $statusLabel .= ' (Locked)';
-        }
-
         /* =====================================================
-           DATA
+           RESPONSE DATA
         ====================================================== */
 
         $data[] = [
@@ -195,25 +289,54 @@ try {
 
             "mode_disposal" => $row['mode_disposal'],
 
-            "status" => $row['status'],
-
-            "status_label" => $statusLabel,
-
-            "current_phase" => $row['current_phase'],
-
-            "last_action" => $row['last_action'],
-
             "remarks" => $row['remarks'],
+
+            /* =========================================
+               WORKFLOW
+            ========================================= */
+
+            "workflow" => [
+
+                "status" => $row['status'],
+
+                "status_label" => $statusLabel,
+
+                "current_phase" => $row['current_phase'],
+
+                "last_action" => $row['last_action']
+            ],
 
             /* =========================================
                FORM OWNER
             ========================================= */
 
-            "user" => [
+            "form_owner" => [
 
-                "uid" => $uid,
+                "uid" => $row['form_owner_uid'],
 
-                "username" => $row['form_username']
+                "username" => $row['form_owner_name']
+            ],
+
+            /* =========================================
+               SENDER
+            ========================================= */
+
+            "sender" => [
+
+                "uid" => $row['sender_id'],
+
+                "username" => $row['sender_name']
+            ],
+
+            /* =========================================
+               RECEIVER
+            ========================================= */
+
+            "receiver" => [
+
+                "uid" => $row['receiver_id'],
+
+                "username" => $row['receiver_name']
             ],
 
             /* =========================================
@@ -230,64 +353,65 @@ try {
             ],
 
             /* =========================================
-               FORWARDED TO
-            ========================================= */
-
-            "forward_to" => [
-
-                "uid" => $row['forward_to'],
-
-                "username" => $row['forward_username']
-            ],
-
-            /* =========================================
                MOVEMENT
             ========================================= */
 
             "movement" => [
 
-                "id" => $row['movement_id'],
+                "id" => $row['sent_movement_id'],
 
-                "action" => $row['movement_action'],
+                "action" => $row['sent_action'],
 
-                "date" => $row['movement_date']
+                "date" => $row['sent_date']
             ],
 
             /* =========================================
-               LOCKING
+               LOCK
             ========================================= */
 
-            "is_locked" => (bool)$row['is_locked'],
+            "lock" => [
 
-            "locked_by" => $row['locked_by'],
+                "is_locked" => (bool)$row['is_locked'],
 
-            "locked_by_name" => $row['locked_by_name'],
+                "locked_by" => $row['locked_by'],
 
-            "locked_at" => $row['locked_at'],
+                "locked_by_name" => $row['locked_by_name'],
 
-            "is_locked_by_other" => $isLockedByOther,
+                "locked_at" => $row['locked_at'],
+
+                "is_locked_by_other" => $isLockedByOther
+            ],
 
             /* =========================================
-               OPEN STATUS
+               OPEN STATE
             ========================================= */
 
-            "is_opened" => (bool)$row['is_opened'],
+            "open_state" => [
 
-            "opened_at" => $row['opened_at'],
+                "is_opened" => (bool)$row['is_opened'],
+
+                "opened_at" => $row['opened_at']
+            ],
 
             /* =========================================
-               PULLBACK
+               PERMISSIONS
             ========================================= */
 
-            "can_pullback" => $canPullBack,
+            "permissions" => [
+
+                "can_pullback" => $canPullBack
+            ],
 
             /* =========================================
-               DATE
+               TIMESTAMPS
             ========================================= */
 
-            "created_at" => $row['created_at'],
+            "timestamps" => [
 
-            "updated_at" => $row['updated_at']
+                "created_at" => $row['created_at'],
+
+                "updated_at" => $row['updated_at']
+            ]
         ];
     }
 
@@ -306,8 +430,9 @@ try {
         "data" => $data
 
     ], JSON_UNESCAPED_UNICODE);
+}
 
-} catch (Exception $e) {
+catch (Exception $e) {
 
     echo json_encode([
 
@@ -317,3 +442,4 @@ try {
 
     ], JSON_UNESCAPED_UNICODE);
 }
+?>

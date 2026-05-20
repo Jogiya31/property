@@ -280,6 +280,7 @@
         function renderTable() {
 
             if ($.fn.DataTable.isDataTable('#allData')) {
+
                 $('#allData').DataTable().destroy();
             }
 
@@ -290,7 +291,29 @@
                 let actionBtn = '';
 
                 /* =========================================
-                   VIEW BUTTON
+                   WORKFLOW
+                ========================================= */
+
+                const formOwner = f.form_owner || {};
+
+                const workflow = f.workflow || {};
+
+                const sender = f.sender || {};
+
+                const receiver = f.receiver || {};
+
+                const currentHolder = f.current_holder || {};
+
+                const permissions = f.permissions || {};
+
+                const lock = f.lock || {};
+
+                const openState = f.open_state || {};
+
+                const timestamps = f.timestamps || {};
+
+                /* =========================================
+                   VIEW URL
                 ========================================= */
 
                 const viewUrl =
@@ -298,108 +321,140 @@
                     `viewImmovable.php?id=${f.id}` :
                     `viewmovable.php?id=${f.id}`;
 
+                /* =========================================
+                   VIEW BUTTON
+                ========================================= */
+
                 actionBtn += `
-                    <a href="${viewUrl}"
-                        class="btn btn-primary">
+                    <a
+                        href="${viewUrl}"
+                        class="btn btn-primary"
+                    >
                         View
                     </a>
                 `;
 
                 /* =========================================
-                   LOCK STATUS
+                   LOCK LABEL
                 ========================================= */
 
-                if (f.is_locked == true) {
+                if (lock.is_locked === true && formOwner.uid !== parseInt(sessionStorage.getItem('uid'))) {
 
                     actionBtn += `
-                        <span class="label label-danger">
+                        <span
+                            class="btn btn-danger" style="cursor: no-drop">
                             Locked
                         </span>
                     `;
                 }
 
                 /* =========================================
-                   PULL BACK BUTTON
+                   PULLBACK BUTTON
+
+                   Conditions:
+
+                   1. Latest sender is current user
+                   2. File still with receiver
+                   3. File not opened
+                   4. File not locked
                 ========================================= */
 
                 if (
-                    f.status === 'Forwarded' &&
-                    f.can_pullback == true &&
-                    f.is_opened == false &&
-                    f.is_locked == false
+                    permissions.can_pullback === true &&
+                    lock.is_locked === false &&
+                    openState.is_opened === false
                 ) {
 
                     actionBtn += `
                         <button
-                            class="btn btn-warning"
-                            onclick="openPullBackModal(${f.id})"
+                            class="btn btn-warning btn-sm"
+                            onclick="openPullBackModal(
+                                ${f.id},
+                                '${viewUrl}'
+                            )"
                         >
                             Revert
                         </button>
                     `;
-                } else if (
-                    String(f.user?.uid) === sessionStorage.getItem('uid')
-                ) {
-
-                    actionBtn = '';
                 }
+
+                /* =========================================
+                   STATUS BADGE
+                ========================================= */
+
+                let statusClass = 'bg-gray';
+
+                if (workflow.status === 'Pending') {
+
+                    statusClass = 'bg-yellow';
+
+                } else if (workflow.status === 'Forwarded') {
+
+                    statusClass = 'bg-aqua';
+
+                } else if (workflow.status === 'Rejected') {
+
+                    statusClass = 'bg-red';
+
+                } else if (workflow.status === 'Approved') {
+
+                    statusClass = 'bg-green';
+                }
+
+                /* =========================================
+                   TABLE ROW
+                ========================================= */
 
                 rows += `
                     <tr>
 
-                        <td>
-                            <strong>${f.reference_no ?? ''}</strong>
-                        </td>
+                        <td><strong>${f.reference_no ?? ''}</strong></td>
 
-                        <td>${f.user?.username ?? ''}</td>
+                        <td>${f.form_owner?.username ?? ''}</td>
 
-                        <td>${f.form_type ?? ''}</td>
+                        <td> ${f.form_type ?? ''} </td>
 
-                        <td>${f.purpose ?? ''}</td>
+                        <td>  ${f.purpose ?? ''}</td>
 
                         <td>${f.acquired_disposed ?? ''}</td>
 
                         <td>${f.date_acquisition_disposed ?? ''}</td>
 
                         <td class="text-center">
-
                             <span class="badge ${
-                                f.status === 'Pending' ? 'bg-yellow' :
-                                f.status === 'Forwarded' ? 'bg-aqua' :
-                                f.status === 'Rejected' ? 'bg-red' :
-                                f.status === 'Draft' ? 'bg-gray' : ''
+                                f.workflow?.status === 'Pending' ? 'bg-yellow' :
+                                f.workflow?.status === 'Forwarded' ? 'bg-aqua' :
+                                f.workflow?.status === 'Rejected' ? 'bg-red' :
+                                f.workflow?.status === 'Draft' ? 'bg-gray' : ''
                             }">
-
-                                ${f.status ?? ''}
-
+                                ${f.workflow?.status ?? ''}
                             </span>
-
                         </td>
 
-                        <td class="text-center">
-                            ${f.forward_to?.username ?? ''}
-                        </td>
+                        <td class="text-center"> ${currentHolder.username ?? ''}</td>
 
                         <td class="text-center">
-                            ${f.created_at
-                                ? f.created_at.split(" ")[0]
-                                : ''}
+                            ${f.timestamps?.created_at ? f.timestamps.created_at.split(" ")[0] : ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>
 
-                        <td class="text-center action">
-                            ${actionBtn}
-                        </td>
+                        <td class="action">${actionBtn}</td>
 
                     </tr>
                 `;
             });
 
-            document.querySelector("#allData tbody").innerHTML = rows;
+            document.querySelector(
+                "#allData tbody"
+            ).innerHTML = rows;
 
-            $('#allData').DataTable();
+            $('#allData').DataTable({
+                responsive: true,
+                destroy: true
+            });
         }
+
         /* =========================================
            OPEN MODAL
         ========================================= */
