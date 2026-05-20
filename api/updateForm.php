@@ -5,24 +5,29 @@ include '../connection/db.php';
 
 header("Content-Type: application/json");
 
-/* ================= INPUT ================= */
+/* =====================================================
+   INPUT
+===================================================== */
 
-$uid         = $_POST['uid'] ?? ($_SESSION['uid'] ?? null);
-$id          = $_POST['id'] ?? null;
+$uid = $_POST['uid'] ?? ($_SESSION['uid'] ?? null);
 
-$action      = $_POST['action'] ?? null; // Forwarded | reverted
+$id = $_POST['id'] ?? null;
 
-$remarks     = trim($_POST['remarks'] ?? '');
+$action = trim($_POST['action'] ?? '');
 
-$correctOM   = isset($_POST['correctOM'])
+$remarks = trim($_POST['remarks'] ?? '');
+
+$correctOM = isset($_POST['correctOM'])
     ? (int)$_POST['correctOM']
     : 0;
 
-$forward_to_id  = !empty($_POST['employee'])
+$forward_to_id = !empty($_POST['employee'])
     ? (int)$_POST['employee']
     : null;
 
-/* ================= VALIDATION ================= */
+/* =====================================================
+   VALIDATION
+===================================================== */
 
 if (!$uid) {
 
@@ -66,7 +71,12 @@ try {
             status,
             current_phase,
             current_holder,
-            current_role_name
+            current_role_name,
+            is_locked,
+            locked_by,
+            locked_at,
+            is_opened,
+            opened_at
         FROM forms
         WHERE id = :id
         LIMIT 1
@@ -83,11 +93,25 @@ try {
     }
 
     /* =====================================================
-       GET CURRENT USER ROLE
+       CHECK CURRENT HOLDER ACCESS
+    ====================================================== */
+
+    if (
+        $action !== 'Pullback' &&
+        (int)$form['current_holder'] !== (int)$uid
+    ) {
+        throw new Exception("You are not authorized to process this form");
+    }
+
+    /* =====================================================
+       GET CURRENT USER
     ====================================================== */
 
     $stmtUser = $conn->prepare("
-        SELECT username
+        SELECT
+            uid,
+            username,
+            designation
         FROM users
         WHERE uid = :uid
         LIMIT 1
@@ -105,22 +129,35 @@ try {
 
     $currentUserName = $userData['username'];
 
+    $currentUserRole = $userData['designation'];
+
     /* =====================================================
        DEFAULT VALUES
     ====================================================== */
 
-    $newStatus      = $form['status'];
-    $newPhase       = $form['current_phase'];
+    $newStatus = $form['status'];
 
-    $currentHolderId  = $form['current_holder'];
-    $currentRoleName    = $form['current_role_name'];
+    $newPhase = $form['current_phase'];
 
-    $lastAction     = null;
+    $currentHolderId = $form['current_holder'];
 
-    $nextUserName       = null;
+    $currentRoleName = $form['current_role_name'];
+
+    $lastAction = null;
+
+    $nextUserName = null;
+
+    $nextUserRole = null;
+
+    $isLocked = false;
+    $lockedBy = null;
+    $lockedAt = null;
+
+    $isOpened = false;
+    $openedAt = null;
 
     /* =====================================================
-       FORWARD USER ROLE
+       FORWARD VALIDATION
     ====================================================== */
 
     if ($action === "Forwarded") {
@@ -129,8 +166,15 @@ try {
             throw new Exception("Please select employee to forward");
         }
 
+        if ($forward_to_id == $uid) {
+            throw new Exception("You cannot forward form to yourself");
+        }
+
         $stmtNext = $conn->prepare("
-            SELECT username
+            SELECT
+                uid,
+                username,
+                designation
             FROM users
             WHERE uid = :id
             LIMIT 1
@@ -147,10 +191,12 @@ try {
         }
 
         $nextUserName = $nextUser['username'];
+
+        $nextUserRole = $nextUser['designation'];
     }
 
     /* =====================================================
-       ACTION LOGIC
+       ACTION : FORWARDED
     ====================================================== */
 
     if ($action === "Forwarded") {
@@ -158,33 +204,61 @@ try {
         $newStatus = "Forwarded";
 
         $currentHolderId = $forward_to_id;
-        $currentRoleName   = $nextUserName;
+
+        $currentRoleName = $nextUserRole;
 
         $lastAction = "Forwarded";
+
+        $isLocked = false;
+        $lockedBy = null;
+        $lockedAt = null;
+
+        $isOpened = false;
+        $openedAt = null;
     }
+
+    /* =====================================================
+       ACTION : REJECTED
+    ====================================================== */
 
     elseif ($action === "Rejected") {
 
-        // On rejection, return the form to the original form owner (forms.uid)
         $currentHolderId = $form['uid'];
+
         $forward_to_id = $form['uid'];
 
-        $userStmt = $conn->prepare("
-            SELECT username
+        $stmtOwner = $conn->prepare("
+            SELECT
+                uid,
+                username,
+                designation
             FROM users
             WHERE uid = :uid
             LIMIT 1
         ");
-        $userStmt->execute([
+
+        $stmtOwner->execute([
             ':uid' => $currentHolderId
         ]);
-        $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
 
-        $currentRoleName = $userData['username'] ?? null;
+        $ownerData = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+
+        if (!$ownerData) {
+            throw new Exception("Original owner not found");
+        }
+
+        $currentRoleName = $ownerData['designation'];
 
         $newStatus = "Rejected";
 
         $lastAction = "Rejected";
+
+        $isLocked = false;
+        $lockedBy = null;
+        $lockedAt = null;
+
+        $isOpened = false;
+        $openedAt = null;
     }
 
     else {
@@ -215,6 +289,16 @@ try {
 
             correctom = :correctOM,
 
+            is_locked = :is_locked,
+
+            locked_by = :locked_by,
+
+            locked_at = :locked_at,
+
+            is_opened = :is_opened,
+
+            opened_at = :opened_at,
+
             updated_by = :updated_by,
 
             updated_at = NOW()
@@ -238,6 +322,16 @@ try {
 
     $stmtUpdate->bindValue(':correctOM', $correctOM, PDO::PARAM_INT);
 
+    $stmtUpdate->bindValue(':is_locked', $isLocked, PDO::PARAM_BOOL);
+
+    $stmtUpdate->bindValue(':locked_by', $lockedBy);
+
+    $stmtUpdate->bindValue(':locked_at', $lockedAt);
+
+    $stmtUpdate->bindValue(':is_opened', $isOpened, PDO::PARAM_BOOL);
+
+    $stmtUpdate->bindValue(':opened_at', $openedAt);
+
     $stmtUpdate->bindValue(':updated_by', $uid, PDO::PARAM_INT);
 
     $stmtUpdate->bindValue(':id', $id, PDO::PARAM_INT);
@@ -245,7 +339,7 @@ try {
     $stmtUpdate->execute();
 
     /* =====================================================
-       INSERT MOVEMENT HISTORY
+       INSERT MOVEMENT
     ====================================================== */
 
     $stmtMovement = $conn->prepare("
@@ -285,14 +379,95 @@ try {
         ':form_id' => $id,
 
         ':from_user_id' => $uid,
-        ':from_role' => $currentUserName,
+
+        ':from_role' => $currentUserRole,
 
         ':to_user_id' => $currentHolderId,
+
         ':to_role' => $currentRoleName,
 
         ':action' => $lastAction,
 
         ':remarks' => $remarks
+    ]);
+
+    /* =====================================================
+       INSERT HISTORY
+    ====================================================== */
+
+    $stmtHistory = $conn->prepare("
+        INSERT INTO form_history (
+
+            form_id,
+
+            action_type,
+
+            action_by,
+            action_by_role,
+
+            action_to,
+            action_to_role,
+
+            field_name,
+
+            old_value,
+            new_value,
+
+            remarks,
+
+            ip_address,
+            user_agent
+
+        )
+        VALUES (
+
+            :form_id,
+
+            :action_type,
+
+            :action_by,
+            :action_by_role,
+
+            :action_to,
+            :action_to_role,
+
+            :field_name,
+
+            :old_value,
+            :new_value,
+
+            :remarks,
+
+            :ip_address,
+            :user_agent
+        )
+    ");
+
+    $stmtHistory->execute([
+
+        ':form_id' => $id,
+
+        ':action_type' => $lastAction,
+
+        ':action_by' => $uid,
+
+        ':action_by_role' => $currentUserRole,
+
+        ':action_to' => $currentHolderId,
+
+        ':action_to_role' => $currentRoleName,
+
+        ':field_name' => 'status',
+
+        ':old_value' => $form['status'],
+
+        ':new_value' => $newStatus,
+
+        ':remarks' => $remarks,
+
+        ':ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+
+        ':user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
     ]);
 
     /* =====================================================
@@ -317,15 +492,18 @@ try {
 
             "current_role_name" => $currentRoleName,
 
-            "forward_to" => $currentHolderId,
+            "forward_to" => $forward_to_id,
 
             "action" => $lastAction
         ]
     ]);
+}
 
-} catch (Exception $e) {
+catch (Exception $e) {
 
-    $conn->rollBack();
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
 
     echo json_encode([
 
@@ -334,3 +512,4 @@ try {
         "error" => $e->getMessage()
     ]);
 }
+?>

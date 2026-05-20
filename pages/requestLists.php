@@ -51,7 +51,7 @@
                                     <th class="text-center">Forwarded To</th>
                                     <th class="text-center">Created At</th>
                                     <th>Remarks</th>
-                                    <th></th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

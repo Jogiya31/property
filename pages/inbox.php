@@ -49,7 +49,7 @@
                                     <th class="text-center">Status</th>
                                     <th class="text-center">Created At</th>
                                     <th>Remarks</th>
-                                    <th></th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -92,32 +92,108 @@
 
         function renderTable() {
             let rows = "";
+
             allData.forEach(f => {
+
                 let actionButtons = "";
+
+                /* =====================================
+                   VIEW / EDIT BUTTONS
+                ===================================== */
+
                 if (f.status === "Draft") {
-                    // Only show Edit button if status is Draft
+
                     if (f.form_type === 'immovable') {
-                        actionButtons = `<a href="immovableForm.php?id=${f.id}" class="btn btn-sm btn-warning edit-btn">Edit</a>`;
+
+                        actionButtons = `
+                            <a href="immovableForm.php?id=${f.id}" 
+                            class="btn btn-sm btn-warning edit-btn">
+                                Edit
+                            </a>
+                        `;
+
                     } else {
-                        actionButtons = `<a href="movableForm.php?id=${f.id}" class="btn btn-sm btn-warning edit-btn">Edit</a>`;
+
+                        actionButtons = `
+                            <a href="movableForm.php?id=${f.id}" 
+                            class="btn btn-sm btn-warning edit-btn">
+                                Edit
+                            </a>
+                        `;
                     }
+
                 } else {
-                    // Show only the View button if not Draft
+
+                    /* =====================================
+                       LOCK STATUS
+                    ===================================== */
+
+                    let disabled = "";
+
+                    let lockText = "";
+
+                    if (
+                        f.is_locked == true &&
+                        parseInt(f.locked_by) !== parseInt(<?= $_SESSION['uid'] ?>)
+                    ) {
+
+                        disabled = "disabled";
+
+                        lockText = `
+                            <small class="text-danger">
+                                Locked by ${f.locked_by_name ?? 'Another User'}
+                            </small>
+                        `;
+                    }
+
+                    /* =====================================
+                       VIEW BUTTON
+                    ===================================== */
+
                     if (f.form_type === 'immovable') {
-                        actionButtons = `<a href="viewImmovable.php?id=${f.id}" class="btn btn-sm btn-primary view-btn">View</a>`;
+
+                        actionButtons = `
+                            <button
+                                class="btn btn-sm btn-primary view-btn"
+                                ${disabled}
+                                onclick="openForm(${f.id}, 'viewImmovable.php')"
+                            >
+                                View
+                            </button>
+
+                            ${lockText}
+                        `;
+
                     } else {
-                        actionButtons = `<a href="viewmovable.php?id=${f.id}" class="btn btn-sm btn-primary view-btn">View</a>`;
+
+                        actionButtons = `
+                            <button
+                                class="btn btn-sm btn-primary view-btn"
+                                ${disabled}
+                                onclick="openForm(${f.id}, 'viewmovable.php')"
+                            >
+                                View
+                            </button>
+
+                            ${lockText}
+                        `;
                     }
                 }
 
                 rows += `
                     <tr>
                         <td><strong>${f.reference_no ?? ''}</strong></td>
+
                         <td>${f.user?.username ?? ''}</td>
+
                         <td>${f.form_type ?? ''}</td>
+
                         <td>${f.purpose ?? ''}</td>
+
                         <td>${f.acquired_disposed ?? ''}</td>
+
                         <td>${f.date_acquisition_disposed ?? ''}</td>
+
                         <td class="text-center">
                             <span class="badge ${
                                 f.status === 'Pending' ? 'bg-yellow' :
@@ -128,9 +204,16 @@
                                 ${f.status ?? ''}
                             </span>
                         </td>
-                        <td class="text-center">${f.created_at ? f.created_at.split(" ")[0] : ''}</td>
+
+                        <td class="text-center">
+                            ${f.created_at ? f.created_at.split(" ")[0] : ''}
+                        </td>
+
                         <td>${f.remarks ?? ''}</td>
-                        <td class="text-center">${actionButtons}</td>
+
+                        <td class="text-center">
+                            ${actionButtons}
+                        </td>
                     </tr>
                 `;
             });
@@ -138,6 +221,42 @@
             document.querySelector("#allData tbody").innerHTML = rows;
 
             $('#allData').DataTable();
+        }
+
+        /* =====================================
+           OPEN FORM + LOCK FILE
+        ===================================== */
+
+        async function openForm(formId, redirectPage) {
+
+            try {
+
+                const formData = new FormData();
+
+                formData.append("form_id", formId);
+
+                const res = await fetch("../api/lock_form.php", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const json = await res.json();
+
+                if (!json.success) {
+
+                    alert(json.error || "Unable to lock form");
+
+                    return;
+                }
+
+                window.location.href = `${redirectPage}?id=${formId}`;
+
+            } catch (err) {
+
+                console.error(err);
+
+                alert("Error while locking form");
+            }
         }
 
         /* ===============================

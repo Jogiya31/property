@@ -34,6 +34,11 @@
 
             <!-- Main content -->
             <section class="content">
+                <div class="text-right mb-2">
+                    <button type="button" class="btn btn-info" id="historyBtn" onclick="openFormHistory()">
+                        <i class="fa fa-history"></i> History
+                    </button>
+                </div>
                 <form id="form1" role="form" novalidate enctype="multipart/form-data">
                     <div id="print">
                         <!-- Header -->
@@ -294,6 +299,22 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">—</span></button>
+                    <h4 class="modal-title">Form History</h4>
+                </div>
+                <div class="modal-body">
+                    <ul class="form-history-timeline" id="formHistoryTimeline">
+                        <li class="form-history-empty">Loading history...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <?php require 'footer.php'; ?>
 
@@ -403,6 +424,7 @@
 
             if (sessionStorage.getItem('designation') === 'SO') {
                 document.getElementById('generatebtn').classList.add('d-none');
+                document.getElementById('correctOM-container').classList.add('d-none')
             }
 
             if (sessionStorage.getItem('designation') == 'DH') {
@@ -626,6 +648,129 @@
             iframe.src = `../api/view_attachement_file.php?file_key=${fileKey}&mode=preview`;
 
             $('#previewModal').modal('show');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatHistoryDate(value) {
+            if (!value) return "";
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+
+            return date.toLocaleString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
+        function statusClass(actionType) {
+            const action = String(actionType ?? "").toLowerCase();
+
+            if (action.includes("reject")) return "danger";
+            if (action.includes("forward")) return "info";
+            if (action.includes("submit") || action.includes("created")) return "success";
+            if (action.includes("pull")) return "warning";
+            if (action.includes("draft")) return "muted";
+
+            return "primary";
+        }
+
+        function renderHistoryTimeline(items) {
+            const timeline = document.getElementById("formHistoryTimeline");
+            if (!timeline) return;
+
+            if (!items || items.length === 0) {
+                timeline.innerHTML = `<li class="form-history-empty">No history found for this form.</li>`;
+                return;
+            }
+
+            timeline.innerHTML = items.map(item => {
+                const action = escapeHtml(item.action_type || "Updated");
+                const by = escapeHtml(item.action_by_name || item.action_by || "Unknown");
+                const byRole = escapeHtml(item.action_by_role || "");
+                const to = escapeHtml(item.action_to_name || item.action_to || "");
+                const toRole = escapeHtml(item.action_to_role || "");
+                const remarks = escapeHtml(item.remarks || "");
+                const date = escapeHtml(formatHistoryDate(item.created_at));
+                const oldValue = escapeHtml(item.old_value || "");
+                const newValue = escapeHtml(item.new_value || "");
+                const fieldName = escapeHtml(item.field_name || "");
+                const badgeClass = statusClass(item.action_type);
+
+                return `
+                    <li class="form-history-item">
+                        <span class="form-history-dot bg-${badgeClass}">
+                            <i class="fa fa-clock-o"></i>
+                        </span>
+                        <div class="form-history-panel">
+                            <div class="form-history-head">
+                                <strong>${action}</strong>
+                                <span>${date}</span>
+                            </div>
+                            <div class="form-history-meta">
+                                By ${by}${byRole ? ` (${byRole})` : ""}
+                                ${to ? ` <i class="fa fa-long-arrow-right"></i> ${to}${toRole ? ` (${toRole})` : ""}` : ""}
+                            </div>
+                            ${fieldName || oldValue || newValue ? `
+                                <div class="form-history-change">
+                                    ${fieldName ? `<span class="label label-default">${fieldName}</span>` : ""}
+                                    ${oldValue || newValue ? `<span>${oldValue || "-"} to ${newValue || "-"}</span>` : ""}
+                                </div>
+                            ` : ""}
+                            ${remarks ? `<div class="form-history-remarks">${remarks}</div>` : ""}
+                        </div>
+                    </li>
+                `;
+            }).join("");
+        }
+
+        async function openFormHistory() {
+            if (!formId) {
+                showAlert("Form ID not found", "danger");
+                return;
+            }
+
+            const timeline = document.getElementById("formHistoryTimeline");
+            if (timeline) {
+                timeline.innerHTML = `<li class="form-history-empty">Loading history...</li>`;
+            }
+
+            $("#historyModal").modal("show");
+
+            try {
+                const res = await fetch("../api/get_form_history.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "Application/json"
+                    },
+                    body: JSON.stringify({
+                        id: formId
+                    })
+                });
+
+                const json = await res.json();
+
+                if (json.success) {
+                    renderHistoryTimeline(json.data);
+                } else {
+                    renderHistoryTimeline([]);
+                    showAlert(json.error || "Unable to load form history", "danger");
+                }
+            } catch (err) {
+                renderHistoryTimeline([]);
+                showAlert("Server error while loading history", "danger");
+            }
         }
 
         function openMemo() {

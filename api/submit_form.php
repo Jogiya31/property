@@ -125,7 +125,7 @@ try {
                 acquisition_gift = :acquisition_gift,
                 other_relevant = :other_relevant,
                 status = :status,
-                forward_to:forward_to,
+                forward_to = :forward_to,
                 updated_by = :uid,
                 updated_at = NOW(),
                 current_holder = :current_holder,
@@ -485,6 +485,114 @@ try {
     ]);
 
     $formData = $stmtForm->fetch(PDO::FETCH_ASSOC);
+
+    /* =====================================================
+   FORM HISTORY ENTRY
+===================================================== */
+
+    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+    /* ================= GET USER ROLE ================= */
+
+    $stmtRole = $conn->prepare("
+    SELECT designation
+    FROM users
+    WHERE uid = :uid
+    LIMIT 1
+");
+
+    $stmtRole->execute([
+        ':uid' => $uid
+    ]);
+
+    $userRole = $stmtRole->fetchColumn();
+
+    $actionType = $editFormId
+        ? ($form_status == 0 ? 'Draft Updated' : 'Form Updated')
+        : ($form_status == 0 ? 'Draft Created' : 'Form Submitted');
+
+    /* =====================================================
+    INSERT HISTORY
+    ===================================================== */
+
+    $stmtHistory = $conn->prepare("
+        INSERT INTO form_history (
+
+            form_id,
+
+            action_type,
+
+            action_by,
+            action_by_role,
+
+            action_to,
+            action_to_role,
+
+            field_name,
+
+            old_value,
+            new_value,
+
+            remarks,
+
+            ip_address,
+            user_agent
+
+        )
+        VALUES (
+
+            :form_id,
+
+            :action_type,
+
+            :action_by,
+            :action_by_role,
+
+            :action_to,
+            :action_to_role,
+
+            :field_name,
+
+            :old_value,
+            :new_value,
+
+            :remarks,
+
+            :ip_address,
+            :user_agent
+        )
+    ");
+
+    $stmtHistory->execute([
+
+        ':form_id' => $formId,
+
+        ':action_type' => $actionType,
+
+        ':action_by' => $uid,
+        ':action_by_role' => $userRole,
+
+        ':action_to' => $currentHolder,
+        ':action_to_role' => $currentRole,
+
+        ':field_name' => 'form',
+
+        ':old_value' => null,
+
+        ':new_value' => json_encode([
+            'status' => $status,
+            'form_type' => $form_type,
+            'purpose' => $purpose
+        ]),
+
+        ':remarks' => $remarks ?? null,
+
+        ':ip_address' => $ipAddress,
+
+        ':user_agent' => $userAgent
+    ]);
 
     echo json_encode([
         "success" => true,
