@@ -153,16 +153,51 @@ try {
 
     $canTakeAction = false;
 
+    /* =========================================
+    USER CONDITIONS
+    ========================================= */
+
+    $isCurrentHolder = (
+        (int)$formRow['current_holder'] === (int)$loggedInUserId
+    );
+
+    $isLatestSender = (
+        (int)$formRow['from_user_id'] === (int)$loggedInUserId
+    );
+
+    /* =========================================
+    LOCK CONDITIONS
+    ========================================= */
+
+    $isLocked = (bool)$formRow['is_locked'];
+
+    $isLockedByLoggedInUser = (
+        $isLocked
+        && (int)$formRow['locked_by'] === (int)$loggedInUserId
+    );
+
+    /* =========================================
+    TAKE ACTION RULES
+
+    1. User is current holder OR latest sender
+    2. File is not locked
+        OR
+        File is locked by logged in user
+    ========================================= */
+
     if (
-        (
-            (int)$formRow['current_holder'] === (int)$loggedInUserId
-            ||
-            (int)$formRow['from_user_id'] === (int)$loggedInUserId
-        )
-        && !(bool)$formRow['is_locked']
+        $isCurrentHolder ||
+        $isLatestSender
     ) {
 
-        $canTakeAction = true;
+        if (
+            !$isLocked
+            ||
+            $isLockedByLoggedInUser
+        ) {
+
+            $canTakeAction = true;
+        }
     }
 
     /* =====================================================

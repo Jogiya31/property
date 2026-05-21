@@ -328,7 +328,7 @@
                 actionBtn += `
                     <a
                         href="${viewUrl}"
-                        class="btn btn-primary"
+                        class="btn btn-primary  btn-sm font-weight-bold"
                     >
                         View
                     </a>
@@ -342,7 +342,7 @@
 
                     actionBtn += `
                         <span
-                            class="btn btn-danger" style="cursor: no-drop">
+                            class="btn btn-danger  btn-sm" style="cursor: no-drop">
                             Locked
                         </span>
                     `;

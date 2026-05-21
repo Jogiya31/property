@@ -638,6 +638,43 @@
                     Number(data.correctom) === 1;
             }
 
+
+            /* =========================================
+            ELEMENTS
+            ========================================= */
+
+            const statusSection =
+                document.querySelector('.status');
+
+            const remarkSection =
+                document.getElementById('remark');
+
+            const forwardBtn =
+                document.getElementById('forwardbtn');
+
+            const forwardSection =
+                document.getElementById('forwardSection');
+
+            const revertBtn =
+                document.getElementById('revertbtn');
+
+            const generateBtn =
+                document.getElementById('generatebtn');
+
+            /* =========================================
+               DEFAULT HIDE
+            ========================================= */
+
+            forwardBtn?.classList.add('d-none');
+
+            revertBtn?.classList.add('d-none');
+
+            generateBtn?.classList.add('d-none');
+
+            remarkSection?.classList.add('d-none');
+
+            forwardSection?.classList.add('d-none');
+
             /* =========================================
                PERMISSIONS
             ========================================= */
@@ -660,28 +697,12 @@
             const canTakeAction =
                 Boolean(permissions.can_take_action);
 
+            const lock_info =
+                data.lock_info || {};
+
             /* =========================================
-               ELEMENTS
+               LOGGED IN USER
             ========================================= */
-            const statusSection =
-                document.querySelector('.status');
-
-            const forwardBtn =
-                document.getElementById('forwardbtn');
-
-            const forwardSection =
-                document.getElementById('forwardSection');
-
-            const revertBtn =
-                document.getElementById('revertbtn');
-
-            const generateBtn =
-                document.getElementById('generatebtn');
-
-
-            /* =====================================
-                LOGGED IN USER
-            ===================================== */
 
             const loggedInUid =
                 Number(sessionStorage.getItem('uid'));
@@ -689,48 +710,116 @@
             const loggedInRole =
                 sessionStorage.getItem('designation');
 
-            /* =====================================
+            /* =========================================
                RESPONSE USERS
-            ===================================== */
+            ========================================= */
 
             const formOwnerId =
                 Number(data.owner_user?.uid);
 
             const currentHolderId =
-                Number(data.current_holder?.uid);
+                Number(data.current_holder_user?.uid);
 
             const fromUserId =
-                Number(data.latest_movement?.from_user_id);
+                Number(data.latest_movement?.from_user?.uid);
 
+
+            /* =========================================
+               SHOW ACTION SECTION
+            ========================================= */
 
             statusSection?.classList.remove('d-none');
 
-           
-            /* =====================================
-                GENERATE BUTTON ONLY DDG / DG
-            ===================================== */
+            // Only show action section if file is not rejected
+            if (data.status !== 'Rejected') {
+            
+                /* =========================================
+                   IF FILE LOCKED BY OTHER USER
+                ========================================= */
 
-            if (
-                loggedInRole === 'DDG' ||
-                loggedInRole === 'DG'
-            ) {
+                if (lock_info.locked_by !== loggedInUid) {
 
-                generateBtn?.classList.remove('d-none');
+                    console.log('lock by other')
 
-            } else {
+                } 
+                else {
 
-                generateBtn?.classList.add('d-none');
+                    /* =====================================
+                       OWNER + SENDER
+                       ONLY VIEW MODE
+                    ===================================== */
+
+                    if (
+                        isFormOwner &&
+                        isLatestSender
+                    ) {
+
+                        statusSection?.classList.add('d-none');
+                    }
+
+                    /* =====================================
+                       USER CAN TAKE ACTION
+                    ===================================== */
+                    else if (canTakeAction) {
+
+                        /* =================================
+                           CURRENT HOLDER
+                           Forward + Reject
+                        ================================= */
+
+                        if (isCurrentHolder) {
+
+                            forwardBtn?.classList.remove('d-none');
+
+                            revertBtn?.classList.remove('d-none');
+
+                            remarkSection?.classList.remove('d-none');
+
+                            forwardSection?.classList.remove('d-none');
+                        }
+
+                        /* =================================
+                           LATEST SENDER
+                           Only Forward
+                        ================================= */
+                        else if (isLatestSender) {
+
+                            forwardBtn?.classList.remove('d-none');
+
+                            remarkSection?.classList.remove('d-none');
+
+                            forwardSection?.classList.remove('d-none');
+                        }
+
+                        /* =================================
+                           DDG / DG
+                           Generate Certificate
+                        ================================= */
+
+                        if (
+                            loggedInRole === 'DDG' ||
+                            loggedInRole === 'DG'
+                        ) {
+
+
+                            generateBtn?.classList.remove('d-none');
+                            forwardBtn?.classList.add('d-none');
+                            forwardSection?.classList.add('d-none');
+                        }
+                    }
+
+                    /* =====================================
+                       PULLBACK
+                    ===================================== */
+
+                    if (canPullback) {
+
+                        revertBtn?.classList.remove('d-none');
+                    }
+                }
+
+                populateEmployeeDropdown();
             }
-
-
-
-
-
-
-
-
-
-            populateEmployeeDropdown();
         }
 
         async function generateCertificate() {
