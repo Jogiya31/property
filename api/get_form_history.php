@@ -43,8 +43,13 @@ try {
     $stmt->execute([':form_id' => $formId]);
     $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $formStmt = $conn->prepare("SELECT * FROM forms WHERE id = :form_id");
+    $formStmt->execute([':form_id' => $formId]);
+    $formData = $formStmt->fetch(PDO::FETCH_ASSOC);
+
     echo json_encode([
         "success" => true,
+        "formData" => $formData,
         "data" => $history
     ]);
 } catch (Exception $e) {

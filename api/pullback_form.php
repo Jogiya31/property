@@ -41,9 +41,9 @@ try {
         throw new Exception("Reason required");
     }
 
-    if ($remarks === '') {
-        throw new Exception("Remarks required");
-    }
+    // if ($remarks === '') {
+    //     throw new Exception("Remarks required");
+    // }
 
     $conn->beginTransaction();
 

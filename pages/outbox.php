@@ -132,7 +132,7 @@
 
                         <div class="form-group">
 
-                            <label>
+                            <label class="required-label">
                                 Select Reason
                             </label>
 
@@ -200,47 +200,18 @@
 
         </div>
 
-        <div class="modal fade" id="timeLine">
-            <div class="modal-dialog">
+        <div class="modal fade" id="historyModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header"></div>
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">—</span></button>
+                        <h4 class="modal-title">Form History <strong id="formHistoryTitle"></strong></h4>
+                    </div>
                     <div class="modal-body">
-                        <ul class="timeline">
-
-                            <!-- timeline time label -->
-                            <li class="time-label">
-                                <span class="bg-red">
-                                    10 Feb. 2014
-                                </span>
-                            </li>
-                            <!-- /.timeline-label -->
-
-                            <!-- timeline item -->
-                            <li>
-                                <!-- timeline icon -->
-                                <i class="fa fa-envelope bg-blue"></i>
-                                <div class="timeline-item">
-                                    <span class="time"><i class="fa fa-clock-o"></i> 12:05</span>
-
-                                    <h3 class="timeline-header"><a href="#">Support Team</a> ...</h3>
-
-                                    <div class="timeline-body">
-                                        ...
-                                        Content goes here
-                                    </div>
-
-                                    <div class="timeline-footer">
-                                        <a class="btn btn-primary btn-xs">...</a>
-                                    </div>
-                                </div>
-                            </li>
-                            <!-- END timeline item -->
-
-                            ...
-
+                        <ul class="timeline" id="formHistoryTimeline"></ul>
                         </ul>
                     </div>
-                    <div class="modal-footer"></div>
                 </div>
             </div>
         </div>
@@ -378,6 +349,15 @@
                     `;
                 }
 
+                actionBtn += `
+                    <button
+                        class="btn btn-info btn-sm"
+                        onclick="openFormHistory(${f.id})"
+                    >
+                        History
+                    </button>
+                `;
+
                 /* =========================================
                    STATUS BADGE
                 ========================================= */
@@ -456,7 +436,7 @@
         }
 
         /* =========================================
-           OPEN MODAL
+           OPEN PULL BACK MODAL
         ========================================= */
 
         function openPullBackModal(formId, viewUrl) {
@@ -470,6 +450,196 @@
             $('#pullback_remarks').val('');
 
             $('#pullBackModal').modal('show');
+        }
+
+        /* =========================================
+           OPEN HISTORY MODAL
+        ========================================= */
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatHistoryDate(value) {
+            if (!value) return "";
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+
+            return date.toLocaleString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
+        function statusClass(actionType) {
+            const action = String(actionType ?? "").toLowerCase();
+
+            if (action.includes("reject")) return "red";
+            if (action.includes("forward")) return "blue";
+            if (action.includes("submit") || action.includes("created")) return "green";
+            if (action.includes("pull")) return "yellow";
+            if (action.includes("draft")) return "gray";
+
+            return "aqua";
+        }
+
+        function getTimelineIcon(actionType) {
+
+            const action = String(actionType || '')
+                .toLowerCase();
+
+            if (action.includes('submit') || action.includes('create')) {
+                return 'fa-check';
+            }
+
+            if (action.includes('forward')) {
+                return 'fa-arrow-right';
+            }
+
+            if (action.includes('pull')) {
+                return 'fa-reply';
+            }
+
+            if (action.includes('reject')) {
+                return 'fa-times';
+            }
+
+            if (action.includes('approve')) {
+                return 'fa-thumbs-up';
+            }
+
+            if (action.includes('unlock')) {
+                return 'fa-unlock';
+            }
+
+            if (action.includes('lock')) {
+                return 'fa-lock';
+            }
+
+            if (action.includes('draft')) {
+                return 'fa-file-text-o';
+            }
+
+            if (action.includes('update')) {
+                return 'fa-pencil';
+            }
+
+            return 'fa-clock-o';
+        }
+
+        function renderHistoryTimeline(items) {
+            const timeline = document.getElementById("formHistoryTimeline");
+            if (!timeline) return;
+
+            if (!items || items.length === 0) {
+                timeline.innerHTML = `<li class="form-history-empty">No history found for this form.</li>`;
+                return;
+            }
+
+            timeline.innerHTML = items.map(item => {
+                const action = escapeHtml(item.action_type || "Updated");
+                const by = escapeHtml(item.action_by_name || item.action_by || "Unknown");
+                const byRole = escapeHtml(item.action_by_role || "");
+                const to = escapeHtml(item.action_to_name || item.action_to || "");
+                const toRole = escapeHtml(item.action_to_role || "");
+                const remarks = escapeHtml(item.remarks || "");
+                const date = escapeHtml(formatHistoryDate(item.created_at).split(",")[0] || "");
+                const time = escapeHtml(formatHistoryDate(item.created_at).split(",")[1]?.trim() || "");
+                const oldValue = escapeHtml(item.old_value || "");
+                const newValue = escapeHtml(item.new_value || "");
+                const fieldName = escapeHtml(item.field_name || "");
+                const badgeClass = statusClass(item.action_type);
+                const iconClass = getTimelineIcon(item.action_type);
+
+                return `
+                        <!-- timeline time label -->
+                        <li class="time-label">
+                            <span class="bg-${badgeClass}">
+                                ${date}
+                            </span>
+                        </li>
+                        <!-- /.timeline-label -->
+
+                        <!-- timeline item -->
+                        <li>
+                            <!-- timeline icon -->
+                            <i class="fa ${iconClass} bg-${badgeClass}"></i>
+                            <div class="timeline-item">
+                                <span class="time"><i class="fa fa-clock-o"></i> ${time}</span>
+
+                                ${action === 'Pull Back' ?  
+                                    `<h3 class="timeline-header"><a href="#">${action}</a>  from  ${to}${toRole ? ` (${toRole})` : ""}
+                                    ${to ? ` <i class="fa fa-long-arrow-right"></i> ${by}${byRole ? ` (${byRole})` : ""}` : ""}</h3>`
+                                    :
+                                        `<h3 class="timeline-header"><a href="#">${action}</a>  by  ${by}${byRole ? ` (${byRole})` : ""}
+                                    ${to ? ` <i class="fa fa-long-arrow-right"></i> ${to}${toRole ? ` (${toRole})` : ""}` : ""}</h3>`
+                                }
+                               
+
+                                <div class="timeline-body">
+                                    ${fieldName || oldValue || newValue ? `
+                                        <div class="form-history-change">
+                                            ${fieldName ? `<span class="label label-default">${fieldName}</span>` : ""}
+                                            ${oldValue || newValue ? `<span>${oldValue || ""} ${fieldName !=='form' ? 'to' : ''} ${newValue || "-"}</span>` : ""}
+                                        </div>
+                                        <br>
+                                    ` : ""}
+                                    ${remarks ? `<div class="form-history-remarks"><strong>Remarks:</strong> ${remarks}</div>` : ""}
+                                </div>
+                            </div>
+                        </li>
+                        <!-- END timeline item -->
+                `
+            }).join("");
+        }
+
+        async function openFormHistory(formId) {
+            if (!formId) {
+                showAlert("Form ID not found", "danger");
+                return;
+            }
+
+            const timeline = document.getElementById("formHistoryTimeline");
+            if (timeline) {
+                timeline.innerHTML = `<li class="form-history-empty">Loading history...</li>`;
+            }
+
+            $("#historyModal").modal("show");
+
+            try {
+                const res = await fetch("../api/get_form_history.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "Application/json"
+                    },
+                    body: JSON.stringify({
+                        id: formId
+                    })
+                });
+
+                const json = await res.json();
+
+                if (json.success) {
+                    renderHistoryTimeline(json.data);
+                    document.getElementById('formHistoryTitle').innerHTML = json.formData?.reference_no;
+
+                } else {
+                    renderHistoryTimeline([]);
+                    showAlert(json.error || "Unable to load form history", "danger");
+                }
+            } catch (err) {
+                renderHistoryTimeline([]);
+                showAlert("Server error while loading history", "danger");
+            }
         }
 
         /* =========================================
@@ -503,12 +673,11 @@
                     ========================================= */
                     window.location.href = redirectUrl;
                 } else {
-                    alert(json.error || json.message);
+                    showAlert(json.error || json.message, "danger");
                 }
 
             } catch (err) {
-                console.error(err);
-                alert("Failed to pull back form");
+                showAlert("Failed to pull back form", "danger");
             }
         }
 

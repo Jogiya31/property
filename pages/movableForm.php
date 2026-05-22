@@ -306,7 +306,7 @@
 
                                         <div class="col-md-8 party_relationship_description  d-none">
                                             <div class="form-group">
-                                                <label class="required-label"></label>
+                                                <label class="required-label">Describe relationship</label>
                                                 <input type="text"
                                                     class="form-control allow-basic"
                                                     name="party_relationship_description[]"
@@ -331,7 +331,7 @@
 
                                         <div class="col-md-8 applicant_dealing_parties_description d-none">
                                             <div class="form-group">
-                                                <label class="required-label"></label>
+                                                <label class="required-label">Full particulars about the official dealing with parties</label>
                                                 <input type="text"
                                                     class="form-control allow-basic"
                                                     name="applicant_dealing_parties_description[]"
