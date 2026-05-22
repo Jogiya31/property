@@ -526,7 +526,7 @@ try {
 
         ':action_to_role' => $newHolderRole,
 
-        ':field_name' => 'status',
+        ':field_name' => 'Status',
 
         ':old_value' => $previousStatus,
 

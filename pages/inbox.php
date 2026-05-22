@@ -154,7 +154,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-primary view-btn"
+                                class="btn btn-primary view-btn btn-sm"
                                 ${disabled}
                                 onclick="openForm(${f.id}, 'viewImmovable.php')"
                             >
@@ -168,7 +168,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-primary view-btn"
+                                class="btn btn-primary view-btn btn-sm"
                                 ${disabled}
                                 onclick="openForm(${f.id}, 'viewmovable.php')"
                             >

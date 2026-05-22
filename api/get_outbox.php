@@ -190,7 +190,7 @@ try {
 
     WHERE (
 
-        /* =========================================
+        (/* =========================================
            FORM OWNER
         ========================================= */
 
@@ -202,7 +202,9 @@ try {
            USER HAS FORWARDED FORM
         ========================================= */
 
-        sentMovement.id IS NOT NULL
+        sentMovement.id IS NOT NULL)
+
+        AND f.status != 'Draft'
 
     )
 
@@ -430,9 +432,7 @@ try {
         "data" => $data
 
     ], JSON_UNESCAPED_UNICODE);
-}
-
-catch (Exception $e) {
+} catch (Exception $e) {
 
     echo json_encode([
 
@@ -442,4 +442,3 @@ catch (Exception $e) {
 
     ], JSON_UNESCAPED_UNICODE);
 }
-?>

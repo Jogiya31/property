@@ -410,8 +410,7 @@
                     <h4 class="modal-title">Form History</h4>
                 </div>
                 <div class="modal-body">
-                    <ul class="form-history-timeline" id="formHistoryTimeline">
-                        <li class="form-history-empty">Loading history...</li>
+                    <ul class="timeline" id="formHistoryTimeline"></ul>
                     </ul>
                 </div>
             </div>
@@ -736,8 +735,7 @@
 
                     console.log('lock by other')
 
-                } 
-                else {
+                } else {
 
                     /* =====================================
                        OWNER + SENDER
@@ -1044,13 +1042,57 @@
         function statusClass(actionType) {
             const action = String(actionType ?? "").toLowerCase();
 
-            if (action.includes("reject")) return "danger";
-            if (action.includes("forward")) return "info";
-            if (action.includes("submit") || action.includes("created")) return "success";
-            if (action.includes("pull")) return "warning";
-            if (action.includes("draft")) return "muted";
+            if (action.includes("reject")) return "red";
+            if (action.includes("forward")) return "blue";
+            if (action.includes("submit") || action.includes("created")) return "green";
+            if (action.includes("pull")) return "yellow";
+            if (action.includes("draft")) return "gray";
 
-            return "primary";
+            return "aqua";
+        }
+
+        function getTimelineIcon(actionType) {
+
+            const action = String(actionType || '')
+                .toLowerCase();
+
+            if (action.includes('submit') || action.includes('create')) {
+                return 'fa-check';
+            }
+
+            if (action.includes('forward')) {
+                return 'fa-arrow-right';
+            }
+
+            if (action.includes('pull')) {
+                return 'fa-reply';
+            }
+
+            if (action.includes('reject')) {
+                return 'fa-times';
+            }
+
+            if (action.includes('approve')) {
+                return 'fa-thumbs-up';
+            }
+
+            if (action.includes('unlock')) {
+                return 'fa-unlock';
+            }
+
+            if (action.includes('lock')) {
+                return 'fa-lock';
+            }
+
+            if (action.includes('draft')) {
+                return 'fa-file-text-o';
+            }
+
+            if (action.includes('update')) {
+                return 'fa-pencil';
+            }
+
+            return 'fa-clock-o';
         }
 
         function renderHistoryTimeline(items) {
@@ -1069,36 +1111,53 @@
                 const to = escapeHtml(item.action_to_name || item.action_to || "");
                 const toRole = escapeHtml(item.action_to_role || "");
                 const remarks = escapeHtml(item.remarks || "");
-                const date = escapeHtml(formatHistoryDate(item.created_at));
+                const date = escapeHtml(formatHistoryDate(item.created_at).split(",")[0] || "");
+                const time = escapeHtml(formatHistoryDate(item.created_at).split(",")[1]?.trim() || "");
                 const oldValue = escapeHtml(item.old_value || "");
                 const newValue = escapeHtml(item.new_value || "");
                 const fieldName = escapeHtml(item.field_name || "");
                 const badgeClass = statusClass(item.action_type);
+                const iconClass = getTimelineIcon(item.action_type);
 
                 return `
-                    <li class="form-history-item">
-                        <span class="form-history-dot bg-${badgeClass}">
-                            <i class="fa fa-clock-o"></i>
-                        </span>
-                        <div class="form-history-panel">
-                            <div class="form-history-head">
-                                <strong>${action}</strong>
-                                <span>${date}</span>
-                            </div>
-                            <div class="form-history-meta">
-                                By ${by}${byRole ? ` (${byRole})` : ""}
-                                ${to ? ` <i class="fa fa-long-arrow-right"></i> ${to}${toRole ? ` (${toRole})` : ""}` : ""}
-                            </div>
-                            ${fieldName || oldValue || newValue ? `
-                                <div class="form-history-change">
-                                    ${fieldName ? `<span class="label label-default">${fieldName}</span>` : ""}
-                                    ${oldValue || newValue ? `<span>${oldValue || "-"} to ${newValue || "-"}</span>` : ""}
+                        <!-- timeline time label -->
+                        <li class="time-label">
+                            <span class="bg-${badgeClass}">
+                                ${date}
+                            </span>
+                        </li>
+                        <!-- /.timeline-label -->
+
+                        <!-- timeline item -->
+                        <li>
+                            <!-- timeline icon -->
+                            <i class="fa ${iconClass} bg-${badgeClass}"></i>
+                            <div class="timeline-item">
+                                <span class="time"><i class="fa fa-clock-o"></i> ${time}</span>
+
+                                ${action === 'Pull Back' ?  
+                                    `<h3 class="timeline-header"><a href="#">${action}</a>  from  ${to}${toRole ? ` (${toRole})` : ""}
+                                    ${to ? ` <i class="fa fa-long-arrow-right"></i> ${by}${byRole ? ` (${byRole})` : ""}` : ""}</h3>`
+                                    :
+                                        `<h3 class="timeline-header"><a href="#">${action}</a>  by  ${by}${byRole ? ` (${byRole})` : ""}
+                                    ${to ? ` <i class="fa fa-long-arrow-right"></i> ${to}${toRole ? ` (${toRole})` : ""}` : ""}</h3>`
+                                }
+                               
+
+                                <div class="timeline-body">
+                                    ${fieldName || oldValue || newValue ? `
+                                        <div class="form-history-change">
+                                            ${fieldName ? `<span class="label label-default">${fieldName}</span>` : ""}
+                                            ${oldValue || newValue ? `<span>${oldValue || ""} ${fieldName !=='form' ? 'to' : ''} ${newValue || "-"}</span>` : ""}
+                                        </div>
+                                        <br>
+                                    ` : ""}
+                                    ${remarks ? `<div class="form-history-remarks"><strong>Remarks:</strong> ${remarks}</div>` : ""}
                                 </div>
-                            ` : ""}
-                            ${remarks ? `<div class="form-history-remarks">${remarks}</div>` : ""}
-                        </div>
-                    </li>
-                `;
+                            </div>
+                        </li>
+                        <!-- END timeline item -->
+                `
             }).join("");
         }
 

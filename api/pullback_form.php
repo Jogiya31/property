@@ -223,15 +223,15 @@ try {
 
             updated_at = NOW(),
 
-            is_locked = false,
+            is_locked = true,
 
-            locked_by = NULL,
+            locked_by = :locked_by,
 
-            locked_at = NULL,
+            locked_at = NOW(),
 
-            is_opened = false,
+            is_opened = true,
 
-            opened_at = NULL
+            opened_at =  NOW()
 
         WHERE id = :id
     ");
@@ -246,53 +246,72 @@ try {
 
         ':updated_by' => $uid,
 
+        'locked_by' => $uid,
+
         ':id' => $formId
     ]);
 
+
     /* =====================================================
-       INSERT MOVEMENT
-    ====================================================== */
+   INSERT MOVEMENT
+===================================================== */
 
     $stmtInsertMovement = $conn->prepare("
-        INSERT INTO form_movements (
+    INSERT INTO form_movements (
 
-            form_id,
+        form_id,
 
-            from_user_id,
-            from_role,
+        from_user_id,
+        from_role,
 
-            to_user_id,
-            to_role,
+        to_user_id,
+        to_role,
 
-            action,
+        action,
 
-            remarks
+        remarks
 
-        )
-        VALUES (
+    )
+    VALUES (
 
-            :form_id,
+        :form_id,
 
-            :from_user_id,
-            :from_role,
+        :from_user_id,
+        :from_role,
 
-            :to_user_id,
-            :to_role,
+        :to_user_id,
+        :to_role,
 
-            :action,
+        :action,
 
-            :remarks
-        )
-    ");
+        :remarks
+    )
+");
+
+    /* =========================================
+   USER WHO CURRENTLY HAS FILE
+========================================= */
+
+    $currentHolderId =
+        (int)$lastMovement['to_user_id'];
+
+    $currentHolderRole =
+        $lastMovement['to_role'];
+
+    /* =========================================
+   PULL BACK TO ORIGINAL SENDER
+========================================= */
 
     $stmtInsertMovement->execute([
 
         ':form_id' => $formId,
 
-        ':from_user_id' => $uid,
+        /* CURRENT HOLDER */
+        ':from_user_id' => $currentHolderId,
 
-        ':from_role' => $user['designation'],
+        ':from_role' => $currentHolderRole,
 
+        /* ORIGINAL SENDER */
         ':to_user_id' => $uid,
 
         ':to_role' => $user['designation'],
@@ -362,9 +381,9 @@ try {
 
         ':action_by_role' => $user['designation'],
 
-        ':action_to' => $uid,
+        ':action_to' => $currentHolderId,
 
-        ':action_to_role' => $user['designation'],
+        ':action_to_role' => $currentHolderRole,
 
         ':remarks' => $reason . ' - ' . $remarks,
 
@@ -389,51 +408,6 @@ try {
     ]));
 
     /* =====================================================
-       HOLDER HISTORY
-    ====================================================== */
-
-    $stmtHistory->execute(array_merge($commonHistory, [
-
-        ':action_type' => 'Pull Back',
-
-        ':field_name' => 'current_holder',
-
-        ':old_value' => $oldHolder,
-
-        ':new_value' => $uid
-    ]));
-
-    /* =====================================================
-       LOCK HISTORY
-    ====================================================== */
-
-    $stmtHistory->execute(array_merge($commonHistory, [
-
-        ':action_type' => 'Unlock',
-
-        ':field_name' => 'is_locked',
-
-        ':old_value' => $oldLocked,
-
-        ':new_value' => 'false'
-    ]));
-
-    /* =====================================================
-       OPEN HISTORY
-    ====================================================== */
-
-    $stmtHistory->execute(array_merge($commonHistory, [
-
-        ':action_type' => 'Reset',
-
-        ':field_name' => 'is_opened',
-
-        ':old_value' => $oldOpened,
-
-        ':new_value' => 'false'
-    ]));
-
-    /* =====================================================
        COMMIT
     ====================================================== */
 
@@ -454,7 +428,6 @@ try {
             "current_holder" => $uid
         ]
     ]);
-
 } catch (Exception $e) {
 
     if ($conn->inTransaction()) {
