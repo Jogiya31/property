@@ -23,6 +23,38 @@ try {
     }
 
     /* =====================================================
+    CLEAR EXPIRED LOCKS / OPEN STATES
+    ===================================================== */
+
+    $stmtClear = $conn->prepare("
+
+        UPDATE forms
+
+        SET
+
+            is_locked = false,
+
+            locked_by = NULL,
+
+            locked_at = NULL,
+
+            is_opened = false,
+
+            opened_at = NULL
+
+        WHERE
+
+            is_opened = true
+
+            AND opened_at IS NOT NULL
+
+            AND opened_at < NOW() - INTERVAL '1 day'
+
+    ");
+
+    $stmtClear->execute();
+
+    /* =====================================================
        OUTBOX QUERY
 
        RULES:
@@ -38,177 +70,177 @@ try {
 
     $sql = "
 
-    SELECT
+        SELECT
 
-        f.id,
-        f.reference_no,
-        f.form_type,
-        f.purpose,
-        f.acquired_disposed,
-        f.date_acquisition_disposed,
-        f.mode_acquisition,
-        f.mode_disposal,
+            f.id,
+            f.reference_no,
+            f.form_type,
+            f.purpose,
+            f.acquired_disposed,
+            f.date_acquisition_disposed,
+            f.mode_acquisition,
+            f.mode_disposal,
 
-        f.status,
-        f.current_phase,
+            f.status,
+            f.current_phase,
 
-        f.current_holder,
-        f.current_role_name,
+            f.current_holder,
+            f.current_role_name,
 
-        f.forward_to,
+            f.forward_to,
 
-        f.last_action,
+            f.last_action,
 
-        f.remarks,
+            f.remarks,
 
-        f.created_at,
-        f.updated_at,
+            f.created_at,
+            f.updated_at,
 
-        f.is_locked,
-        f.locked_by,
-        f.locked_at,
+            f.is_locked,
+            f.locked_by,
+            f.locked_at,
 
-        f.is_opened,
-        f.opened_at,
+            f.is_opened,
+            f.opened_at,
 
-        /* =========================================
-           FORM OWNER
-        ========================================= */
+            /* =========================================
+            FORM OWNER
+            ========================================= */
 
-        owner.uid AS form_owner_uid,
-        owner.username AS form_owner_name,
+            owner.uid AS form_owner_uid,
+            owner.username AS form_owner_name,
 
-        /* =========================================
-           CURRENT HOLDER
-        ========================================= */
+            /* =========================================
+            CURRENT HOLDER
+            ========================================= */
 
-        currentUser.username AS current_holder_name,
+            currentUser.username AS current_holder_name,
 
-        /* =========================================
-           FORWARDED USER
-        ========================================= */
+            /* =========================================
+            FORWARDED USER
+            ========================================= */
 
-        forwardUser.username AS forward_username,
+            forwardUser.username AS forward_username,
 
-        /* =========================================
-           LOCK USER
-        ========================================= */
+            /* =========================================
+            LOCK USER
+            ========================================= */
 
-        lockUser.username AS locked_by_name,
+            lockUser.username AS locked_by_name,
 
-        /* =========================================
-           USER SENT MOVEMENT
-        ========================================= */
+            /* =========================================
+            USER SENT MOVEMENT
+            ========================================= */
 
-        sentMovement.id AS sent_movement_id,
-        sentMovement.action AS sent_action,
-        sentMovement.created_at AS sent_date,
+            sentMovement.id AS sent_movement_id,
+            sentMovement.action AS sent_action,
+            sentMovement.created_at AS sent_date,
 
-        sentMovement.from_user_id AS sender_id,
-        sentMovement.to_user_id AS receiver_id,
+            sentMovement.from_user_id AS sender_id,
+            sentMovement.to_user_id AS receiver_id,
 
-        senderUser.username AS sender_name,
-        receiverUser.username AS receiver_name,
+            senderUser.username AS sender_name,
+            receiverUser.username AS receiver_name,
 
-        /* =========================================
-           LATEST MOVEMENT
-        ========================================= */
+            /* =========================================
+            LATEST MOVEMENT
+            ========================================= */
 
-        latestMovement.id AS latest_movement_id,
+            latestMovement.id AS latest_movement_id,
 
-        latestMovement.from_user_id AS latest_sender_id,
+            latestMovement.from_user_id AS latest_sender_id,
 
-        latestMovement.to_user_id AS latest_receiver_id,
+            latestMovement.to_user_id AS latest_receiver_id,
 
-        latestMovement.action AS latest_action
+            latestMovement.action AS latest_action
 
-    FROM forms f
-
-    /* =========================================
-       LATEST MOVEMENT OF CURRENT USER
-    ========================================= */
-
-    LEFT JOIN LATERAL (
-
-        SELECT sm.*
-
-        FROM form_movements sm
-
-        WHERE
-            sm.form_id = f.id
-            AND sm.from_user_id = :uid
-
-        ORDER BY sm.id DESC
-
-        LIMIT 1
-
-    ) sentMovement ON true
-
-    /* =========================================
-       LATEST MOVEMENT OF FORM
-    ========================================= */
-
-    LEFT JOIN LATERAL (
-
-        SELECT lm.*
-
-        FROM form_movements lm
-
-        WHERE lm.form_id = f.id
-
-        ORDER BY lm.id DESC
-
-        LIMIT 1
-
-    ) latestMovement ON true
-
-    /* =========================================
-       USERS
-    ========================================= */
-
-    LEFT JOIN users owner
-        ON owner.uid = f.uid::INTEGER
-
-    LEFT JOIN users currentUser
-        ON currentUser.uid = f.current_holder
-
-    LEFT JOIN users forwardUser
-        ON forwardUser.uid = f.forward_to
-
-    LEFT JOIN users lockUser
-        ON lockUser.uid = f.locked_by
-
-    LEFT JOIN users senderUser
-        ON senderUser.uid = sentMovement.from_user_id
-
-    LEFT JOIN users receiverUser
-        ON receiverUser.uid = sentMovement.to_user_id
-
-    /* =========================================
-       OUTBOX CONDITIONS
-    ========================================= */
-
-    WHERE (
-
-        (/* =========================================
-           FORM OWNER
-        ========================================= */
-
-        f.uid::INTEGER = :uid
-
-        OR
+        FROM forms f
 
         /* =========================================
-           USER HAS FORWARDED FORM
+        LATEST MOVEMENT OF CURRENT USER
         ========================================= */
 
-        sentMovement.id IS NOT NULL)
+        LEFT JOIN LATERAL (
 
-        AND f.status != 'Draft'
+            SELECT sm.*
 
-    )
+            FROM form_movements sm
 
-    ORDER BY f.id DESC
+            WHERE
+                sm.form_id = f.id
+                AND sm.from_user_id = :uid
+
+            ORDER BY sm.id DESC
+
+            LIMIT 1
+
+        ) sentMovement ON true
+
+        /* =========================================
+        LATEST MOVEMENT OF FORM
+        ========================================= */
+
+        LEFT JOIN LATERAL (
+
+            SELECT lm.*
+
+            FROM form_movements lm
+
+            WHERE lm.form_id = f.id
+
+            ORDER BY lm.id DESC
+
+            LIMIT 1
+
+        ) latestMovement ON true
+
+        /* =========================================
+        USERS
+        ========================================= */
+
+        LEFT JOIN users owner
+            ON owner.uid = f.uid::INTEGER
+
+        LEFT JOIN users currentUser
+            ON currentUser.uid = f.current_holder
+
+        LEFT JOIN users forwardUser
+            ON forwardUser.uid = f.forward_to
+
+        LEFT JOIN users lockUser
+            ON lockUser.uid = f.locked_by
+
+        LEFT JOIN users senderUser
+            ON senderUser.uid = sentMovement.from_user_id
+
+        LEFT JOIN users receiverUser
+            ON receiverUser.uid = sentMovement.to_user_id
+
+        /* =========================================
+        OUTBOX CONDITIONS
+        ========================================= */
+
+        WHERE (
+
+            (/* =========================================
+            FORM OWNER
+            ========================================= */
+
+            f.uid::INTEGER = :uid
+
+            OR
+
+            /* =========================================
+            USER HAS FORWARDED FORM
+            ========================================= */
+
+            sentMovement.id IS NOT NULL)
+
+            AND f.status != 'Draft'
+
+        )
+
+        ORDER BY f.id DESC
     ";
 
     $stmt = $conn->prepare($sql);

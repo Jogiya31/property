@@ -283,38 +283,75 @@
 
                 const timestamps = f.timestamps || {};
 
-                /* =========================================
-                   VIEW URL
-                ========================================= */
 
-                const viewUrl =
-                    f.form_type === 'immovable' ?
-                    `viewImmovable.php?id=${f.id}` :
-                    `viewmovable.php?id=${f.id}`;
 
-                /* =========================================
-                   VIEW BUTTON
-                ========================================= */
+                /* =====================================
+                   LOCK STATUS
+                ===================================== */
 
-                actionBtn += `
-                    <a
-                        href="${viewUrl}"
-                        class="btn btn-primary  btn-sm font-weight-bold"
-                    >
-                        View
-                    </a>
-                `;
+                let disabled = "";
+
+                let lockText = "";
+
+                if (
+                    f.is_locked == true &&
+                    parseInt(f.locked_by) !== parseInt(sessionStorage.getItem("uid"))
+                ) {
+
+                    disabled = "disabled";
+
+                    lockText = `
+                            <small class="text-danger">
+                                Locked by ${f.locked_by_name ?? 'Another User'}
+                                Locked
+                            </small>
+                        `;
+                }
+
+                /* =====================================
+                       VIEW BUTTON
+                    ===================================== */
+
+                if (f.form_type === 'immovable') {
+
+                    actionBtn = `
+                            <button
+                                class="btn btn-primary view-btn btn-sm"
+                                ${disabled}
+                                onclick="openForm(${f.id}, 'viewImmovable.php')"
+                                title="View Form"
+                            > View
+                            </button>
+
+                            ${lockText}
+                        `;
+
+                } else {
+
+                    actionBtn = `
+                            <button
+                                class="btn btn-primary view-btn btn-sm"
+                                ${disabled}
+                                onclick="openForm(${f.id}, 'viewmovable.php')"
+                                title="View Form"
+                            >View
+                            </button>
+
+                            ${lockText}
+                        `;
+
+                }
 
                 /* =========================================
                    LOCK LABEL
                 ========================================= */
 
-                if (lock.is_locked === true && formOwner.uid !== parseInt(sessionStorage.getItem('uid'))) {
+                if (lock.is_locked === true && lock.locked_by !== parseInt(sessionStorage.getItem('uid')) && formOwner.uid !== parseInt(sessionStorage.getItem('uid'))) {
 
                     actionBtn += `
                         <span
-                            class="btn btn-danger  btn-sm" style="cursor: no-drop">
-                            Locked
+                            class="btn btn-danger  btn-sm" style="cursor: no-drop" title="Locked by ${f.lock.locked_by_name ?? 'Another User'}">
+                           Locked
                         </span>
                     `;
                 }
@@ -341,20 +378,25 @@
                             class="btn btn-warning btn-sm"
                             onclick="openPullBackModal(
                                 ${f.id},
-                                '${viewUrl}'
+                                ${f.form_type === 'immovable' ?
+                                    `viewImmovable.php?id=${f.id}` :
+                                    `viewmovable.php?id=${f.id}`
+                                }"
                             )"
+                            title="Pull Back Form"
                         >
-                            Revert
+                          Pull Back
                         </button>
                     `;
                 }
 
                 actionBtn += `
                     <button
-                        class="btn btn-info btn-sm"
+                        class="btn bg-purple btn-sm"
                         onclick="openFormHistory(${f.id})"
+                        title="View History"
                     >
-                        History
+                     History
                     </button>
                 `;
 
@@ -434,6 +476,43 @@
                 destroy: true
             });
         }
+
+        /* =====================================
+           OPEN FORM + LOCK FILE
+        ===================================== */
+
+        async function openForm(formId, redirectPage) {
+
+            try {
+
+                const formData = new FormData();
+
+                formData.append("form_id", formId);
+
+                const res = await fetch("../api/lock_form.php", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const json = await res.json();
+
+                if (!json.success) {
+
+                    alert(json.error || "Unable to lock form");
+
+                    return;
+                }
+
+                window.location.href = `${redirectPage}?id=${formId}`;
+
+            } catch (err) {
+
+                console.error(err);
+
+                alert("Error while locking form");
+            }
+        }
+
 
         /* =========================================
            OPEN PULL BACK MODAL

@@ -135,8 +135,7 @@
                         `;
                     }
 
-                } 
-                else {
+                } else {
 
                     /* =====================================
                        LOCK STATUS
@@ -154,8 +153,8 @@
                         disabled = "disabled";
 
                         lockText = `
-                            <small class="text-danger">
-                                Locked by ${f.locked_by_name ?? 'Another User'}
+                            <small class="text-danger" title="Locked by ${f.locked_by_name ?? 'Another User'}">
+                               Locked
                             </small>
                         `;
                     }
@@ -178,8 +177,7 @@
                             ${lockText}
                         `;
 
-                    } 
-                    else {
+                    } else {
 
                         actionButtons = `
                             <button
@@ -197,7 +195,7 @@
 
                     actionButtons += `
                         <button
-                            class="btn btn-info btn-sm"
+                            class="btn bg-purple btn-sm"
                             onclick="openFormHistory(${f.id})"
                         >
                             History

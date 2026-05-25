@@ -35,7 +35,7 @@
             <!-- Main content -->
             <section class="content">
                 <div class="text-right mb-2">
-                    <button type="button" class="btn btn-info" id="historyBtn" onclick="openFormHistory()">
+                    <button type="button" class="btn bg-purple" id="historyBtn" onclick="openFormHistory()">
                         <i class="fa fa-history"></i> History
                     </button>
                 </div>
@@ -728,6 +728,7 @@
 
             statusSection?.classList.remove('d-none');
 
+
             // Only show action section if file is not rejected
             if (data.status !== 'Rejected') {
 
@@ -735,11 +736,12 @@
                    IF FILE LOCKED BY OTHER USER
                 ========================================= */
 
-                if (lock_info.locked_by !== loggedInUid) {
+                if (Number(lock_info?.locked_by) !== loggedInUid) {
 
                     console.log('lock by other')
 
                 } else {
+
 
                     /* =====================================
                        OWNER + SENDER
@@ -766,6 +768,7 @@
 
                         if (isCurrentHolder) {
 
+
                             forwardBtn?.classList.remove('d-none');
 
                             revertBtn?.classList.remove('d-none');
@@ -780,12 +783,15 @@
                            Only Forward
                         ================================= */
                         else if (isLatestSender) {
-
                             forwardBtn?.classList.remove('d-none');
 
                             remarkSection?.classList.remove('d-none');
 
                             forwardSection?.classList.remove('d-none');
+
+                            if (lock_info?.locked_by === loggedInUid) {
+                                revertBtn?.classList.remove('d-none');
+                            }
                         }
 
                         /* =================================
@@ -1354,8 +1360,8 @@
                 <p style="text-align:justify;">
                     The undersigned is directed to refer to the application in Form-I dated 
                     ${data.date_acquisition_disposed}
-                    submitted by ${data.user_details.username}, ${data.user_details.designation} 
-                    (Employee Code: ${data.user_details.emp_code}),
+                    submitted by ${data.owner_user?.username}, ${data.owner_user?.designation} 
+                    (Employee Code: ${data.owner_user?.emp_code}),
                     regarding the ${data.acquired_disposed} of immovable property.
                 </p>
 
@@ -1377,10 +1383,10 @@
                 </div>
 
                 <div class="copy">
-                    <p><strong>To:</strong> ${data.user_details.username}, ${data.user_details.designation}, Employee Code: ${data.user_details.emp_code}</p>
+                    <p><strong>To:</strong> ${data.owner_user?.username}, ${data.owner_user?.designation}, Employee Code: ${data.owner_user?.emp_code}</p>
                     <p><strong>Copy to:</strong></p>
                     <ol>
-                        <li>Vol-II/${data.user_details.emp_code}</li>
+                        <li>Vol-II/${data.owner_user?.emp_code}</li>
                         <li>Office Copy</li>
                     </ol>
                 </div>

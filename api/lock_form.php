@@ -10,6 +10,10 @@ $uid = $_SESSION['uid'] ?? null;
 
 $formId = $_POST['form_id'] ?? null;
 
+/* =====================================
+   VALIDATION
+===================================== */
+
 if (!$uid) {
 
     echo json_encode([
@@ -32,12 +36,18 @@ if (!$formId) {
 
 try {
 
+    /* =====================================
+       GET FORM
+    ===================================== */
+
     $stmt = $conn->prepare("
         SELECT
             id,
             is_locked,
             locked_by,
-            current_holder
+            locked_at,
+            is_opened,
+            opened_at
         FROM forms
         WHERE id = :id
         LIMIT 1
@@ -55,35 +65,69 @@ try {
     }
 
     /* =====================================
-       ONLY CURRENT HOLDER CAN OPEN
+       CHECK LOCK EXPIRY
     ===================================== */
 
-    if ((int)$form['current_holder'] !== (int)$uid) {
+    $lockExpired = false;
 
-        throw new Exception("You are not authorized to open this form");
-    }
-
-    /* =====================================
-       IF LOCKED BY OTHER USER
-    ===================================== */
+    /*
+    |--------------------------------------------------------------------------
+    | Expire lock after 1 day of inactivity
+    |--------------------------------------------------------------------------
+    */
 
     if (
 
-        $form['is_locked'] == true &&
+        !empty($form['opened_at'])
 
-        (int)$form['locked_by'] !== (int)$uid
+        && strtotime($form['opened_at']) < strtotime('-1 day')
 
     ) {
 
-        throw new Exception("Form already opened by another user");
+        $lockExpired = true;
     }
 
     /* =====================================
-       LOCK FORM
+       LOCK VALIDATION
     ===================================== */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Block if:
+    | locked by another user
+    | AND lock not expired
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+
+        (bool)$form['is_locked'] === true
+
+        && (int)$form['locked_by'] !== (int)$uid
+
+        && !$lockExpired
+
+    ) {
+
+        throw new Exception(
+            "Form already opened by another user"
+        );
+    }
+
+    /* =====================================
+       SAFE ATOMIC LOCK QUERY
+    ===================================== */
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT:
+    | Atomic update prevents race condition
+    |--------------------------------------------------------------------------
+    */
+
     $stmtUpdate = $conn->prepare("
-        UPDATE forms SET
+        UPDATE forms
+        SET
 
             is_locked = true,
 
@@ -96,6 +140,20 @@ try {
             opened_at = NOW()
 
         WHERE id = :id
+
+        AND (
+
+            is_locked = false
+
+            OR locked_by = :uid
+
+            OR (
+
+                is_locked = true
+
+                AND opened_at < NOW() - INTERVAL '1 day'
+            )
+        )
     ");
 
     $stmtUpdate->execute([
@@ -103,15 +161,72 @@ try {
         ':id' => $formId
     ]);
 
+    /* =====================================
+       FINAL SAFETY CHECK
+    ===================================== */
+
+    /*
+    |--------------------------------------------------------------------------
+    | rowCount = 0 means:
+    | another user locked form
+    |--------------------------------------------------------------------------
+    */
+
+    if ($stmtUpdate->rowCount() === 0) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get latest lock owner
+        |--------------------------------------------------------------------------
+        */
+
+        $q = $conn->prepare("
+            SELECT
+                locked_by
+            FROM forms
+            WHERE id = :id
+            LIMIT 1
+        ");
+
+        $q->execute([
+            ':id' => $formId
+        ]);
+
+        $lockData = $q->fetch(PDO::FETCH_ASSOC);
+
+        throw new Exception(
+            "Form already opened by another user"
+        );
+    }
+
+    /* =====================================
+       SUCCESS RESPONSE
+    ===================================== */
+
     echo json_encode([
+
         "success" => true,
-        "message" => "Form locked successfully"
-    ]);
 
-} catch (Exception $e) {
+        "message" => "Form locked successfully",
+
+        "data" => [
+
+            "form_id" => $formId,
+
+            "locked_by" => $uid,
+
+            "locked_at" => date('Y-m-d H:i:s')
+        ]
+    ]);
+}
+
+catch (Exception $e) {
 
     echo json_encode([
+
         "success" => false,
+
         "error" => $e->getMessage()
     ]);
 }
+?>

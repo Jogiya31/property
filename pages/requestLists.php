@@ -131,7 +131,7 @@
                                 ${f.status ?? ''}
                             </span>
                         </td>
-                        <td class="text-center">${f.forward_to?.username ?? ''}</td>
+                        <td class="text-center">${f.current_holder?.username ?? ''}</td>
                         <td class="text-center">${f.created_at ? f.created_at.split(" ")[0] : ''}</td>
                         <td>${f.remarks ?? ''}</td>
                         <td class="text-center">${actionButtons}</td>

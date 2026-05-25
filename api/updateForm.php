@@ -112,7 +112,57 @@ try {
     $form = $stmtForm->fetch(PDO::FETCH_ASSOC);
 
     if (!$form) {
+
         throw new Exception("Form not found");
+    }
+
+    /* =====================================================
+       AUTO CLEAR EXPIRED LOCK
+    ====================================================== */
+
+    $isExpired = false;
+
+    if (!empty($form['opened_at'])) {
+
+        $isExpired =
+            strtotime($form['opened_at'])
+            < strtotime('-1 day');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Clear stale lock
+    |--------------------------------------------------------------------------
+    */
+
+    if ($isExpired) {
+
+        $stmtExpire = $conn->prepare("
+            UPDATE forms
+            SET
+                is_locked = false,
+                locked_by = NULL,
+                locked_at = NULL,
+                is_opened = false,
+                opened_at = NULL
+            WHERE id = :id
+        ");
+
+        $stmtExpire->execute([
+            ':id' => $id
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Refresh form data
+        |--------------------------------------------------------------------------
+        */
+
+        $stmtForm->execute([
+            ':id' => $id
+        ]);
+
+        $form = $stmtForm->fetch(PDO::FETCH_ASSOC);
     }
 
     /* =====================================================
@@ -137,6 +187,36 @@ try {
     }
 
     /* =====================================================
+       LOCK VALIDATION
+    ====================================================== */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Form must be locked
+    |--------------------------------------------------------------------------
+    */
+
+    if (!(bool)$form['is_locked']) {
+
+        throw new Exception(
+            "Form is not locked. Please reopen form."
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lock owner validation
+    |--------------------------------------------------------------------------
+    */
+
+    if ((int)$form['locked_by'] !== (int)$uid) {
+
+        throw new Exception(
+            "Form locked by another user"
+        );
+    }
+
+    /* =====================================================
        GET CURRENT USER
     ====================================================== */
 
@@ -157,6 +237,7 @@ try {
     $userData = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
     if (!$userData) {
+
         throw new Exception("User not found");
     }
 
@@ -177,20 +258,6 @@ try {
     $newHolderRole = $form['current_role_name'];
 
     $lastAction = null;
-
-    $nextUserName = null;
-
-    $nextUserRole = null;
-
-    $isLocked = false;
-
-    $lockedBy = null;
-
-    $lockedAt = null;
-
-    $isOpened = false;
-
-    $openedAt = null;
 
     /* =====================================================
        FORWARD VALIDATION
@@ -235,45 +302,20 @@ try {
             );
         }
 
-        $nextUserName = $nextUser['username'];
-
-        $nextUserRole = $nextUser['designation'];
-    }
-
-    /* =====================================================
-       ACTION : FORWARDED
-    ====================================================== */
-
-    if ($action === "Forwarded") {
-
         $newStatus = "Forwarded";
 
-        $newHolderId = $forward_to_id;
+        $newHolderId = $nextUser['uid'];
 
-        $newHolderRole = $nextUserRole;
+        $newHolderRole = $nextUser['designation'];
 
         $lastAction = "Forwarded";
-
-        $isLocked = false;
-
-        $lockedBy = null;
-
-        $lockedAt = null;
-
-        $isOpened = false;
-
-        $openedAt = null;
     }
 
     /* =====================================================
-       ACTION : REJECTED
+       REJECT ACTION
     ====================================================== */
 
     elseif ($action === "Rejected") {
-
-        $newHolderId = $form['uid'];
-
-        $forward_to_id = $form['uid'];
 
         $stmtOwner = $conn->prepare("
             SELECT
@@ -286,7 +328,7 @@ try {
         ");
 
         $stmtOwner->execute([
-            ':uid' => $newHolderId
+            ':uid' => $form['uid']
         ]);
 
         $ownerData = $stmtOwner->fetch(PDO::FETCH_ASSOC);
@@ -298,29 +340,24 @@ try {
             );
         }
 
-        $newHolderRole = $ownerData['designation'];
-
         $newStatus = "Rejected";
 
+        $newHolderId = $ownerData['uid'];
+
+        $newHolderRole = $ownerData['designation'];
+
+        $forward_to_id = $ownerData['uid'];
+
         $lastAction = "Rejected";
-
-        $isLocked = false;
-
-        $lockedBy = null;
-
-        $lockedAt = null;
-
-        $isOpened = false;
-
-        $openedAt = null;
     }
 
     /* =====================================================
-       UPDATE FORM
+       SAFE CONDITIONAL UPDATE
     ====================================================== */
 
     $stmtUpdate = $conn->prepare("
-        UPDATE forms SET
+        UPDATE forms
+        SET
 
             status = :status,
 
@@ -338,21 +375,33 @@ try {
 
             correctom = :correctOM,
 
-            is_locked = :is_locked,
+            is_locked = false,
 
-            locked_by = :locked_by,
+            locked_by = NULL,
 
-            locked_at = :locked_at,
+            locked_at = NULL,
 
-            is_opened = :is_opened,
+            is_opened = false,
 
-            opened_at = :opened_at,
+            opened_at = NULL,
 
             updated_by = :updated_by,
 
-            updated_at = NOW()
+            updated_at = NOW(),
 
-        WHERE id = :id
+            last_activity_at = NOW()
+
+        WHERE
+
+            id = :id
+
+            AND current_holder = :updated_by
+
+            AND is_locked = true
+
+            AND locked_by = :updated_by
+
+            AND status = :previous_status
     ");
 
     $stmtUpdate->bindValue(':status', $newStatus);
@@ -376,27 +425,14 @@ try {
     );
 
     $stmtUpdate->bindValue(
-        ':is_locked',
-        $isLocked,
-        PDO::PARAM_BOOL
-    );
-
-    $stmtUpdate->bindValue(':locked_by', $lockedBy);
-
-    $stmtUpdate->bindValue(':locked_at', $lockedAt);
-
-    $stmtUpdate->bindValue(
-        ':is_opened',
-        $isOpened,
-        PDO::PARAM_BOOL
-    );
-
-    $stmtUpdate->bindValue(':opened_at', $openedAt);
-
-    $stmtUpdate->bindValue(
         ':updated_by',
         $uid,
         PDO::PARAM_INT
+    );
+
+    $stmtUpdate->bindValue(
+        ':previous_status',
+        $previousStatus
     );
 
     $stmtUpdate->bindValue(
@@ -406,6 +442,20 @@ try {
     );
 
     $stmtUpdate->execute();
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT:
+    | Prevent stale updates / race conditions
+    |--------------------------------------------------------------------------
+    */
+
+    if ($stmtUpdate->rowCount() === 0) {
+
+        throw new Exception(
+            "Form already updated or locked by another user"
+        );
+    }
 
     /* =====================================================
        INSERT MOVEMENT
@@ -551,35 +601,7 @@ try {
 
         "message" => "Form " .
             strtolower($lastAction) .
-            " successfully",
-
-        "data" => [
-
-            "form_id" => $id,
-
-            "workflow" => [
-
-                "status" => $newStatus,
-
-                "action" => $lastAction,
-
-                "phase" => $newPhase
-            ],
-
-            "sender" => [
-
-                "uid" => $previousHolderId,
-
-                "role" => $previousRoleName
-            ],
-
-            "receiver" => [
-
-                "uid" => $newHolderId,
-
-                "role" => $newHolderRole
-            ]
-        ]
+            " successfully"
     ]);
 }
 

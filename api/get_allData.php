@@ -29,6 +29,40 @@ try {
         throw new Exception("User not logged in");
     }
 
+
+    /* =====================================================
+    CLEAR EXPIRED LOCKS / OPEN STATES
+    ===================================================== */
+
+    $stmtClear = $conn->prepare("
+
+        UPDATE forms
+
+        SET
+
+            is_locked = false,
+
+            locked_by = NULL,
+
+            locked_at = NULL,
+
+            is_opened = false,
+
+            opened_at = NULL
+
+        WHERE
+
+            is_opened = true
+
+            AND opened_at IS NOT NULL
+
+            AND opened_at < NOW() - INTERVAL '1 day'
+
+    ");
+
+    $stmtClear->execute();
+
+
     /* =====================================================
        BASE QUERY
     ====================================================== */

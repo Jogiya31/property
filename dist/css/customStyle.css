@@ -422,6 +422,9 @@
     font-weight: bold;
 }
 
+.btn-icon-size-lg {
+    font-size: large;
+}
 
 /* Hide all buttons by default */
 .rows_applicant .addRow_applicant,
@@ -712,4 +715,12 @@
     .property-block {
         border: none !important;
     }
+}
+
+#historyModal .modal-content {
+    background: #f4f4f4
+}
+
+#historyModal .modal-header {
+    background: #fff;
 }

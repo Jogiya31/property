@@ -35,7 +35,7 @@
             <!-- Main content -->
             <section class="content">
                 <div class="text-right mb-2">
-                    <button type="button" class="btn btn-info" id="historyBtn" onclick="openFormHistory()">
+                    <button type="button" class="btn bg-purple" id="historyBtn" onclick="openFormHistory()">
                         <i class="fa fa-history"></i> History
                     </button>
                 </div>
@@ -1313,8 +1313,8 @@
                     <p style="text-align:justify;">
                         The undersigned is directed to refer to the application in Form-II dated 
                         ${data.date_acquisition_disposed}
-                        submitted by ${data.user_details.username}, ${data.user_details.designation} 
-                        (Employee Code: ${data.user_details.emp_code}),
+                        submitted by ${data.owner_user?.username}, ${data.owner_user?.designation} 
+                        (Employee Code: ${data.owner_user?.emp_code}),
                         regarding the ${data.acquired_disposed} of movable property.
                     </p>
 
@@ -1336,10 +1336,10 @@
                     </div>
 
                     <div class="copy">
-                        <p><strong>To:</strong> ${data.user_details.username}, ${data.user_details.designation}, Employee Code: ${data.user_details.emp_code}</p>
+                        <p><strong>To:</strong> ${data.owner_user?.username}, ${data.owner_user?.designation}, Employee Code: ${data.owner_user?.emp_code}</p>
                         <p><strong>Copy to:</strong></p>
                         <ol>
-                            <li>Vol-II/${data.user_details.emp_code}</li>
+                            <li>Vol-II/${data.owner_user?.emp_code}</li>
                             <li>Office Copy</li>
                         </ol>
                     </div>
