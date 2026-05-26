@@ -222,7 +222,7 @@ try {
 
         WHERE (
 
-            (/* =========================================
+            /* =========================================
             FORM OWNER
             ========================================= */
 
@@ -231,13 +231,64 @@ try {
             OR
 
             /* =========================================
-            USER HAS FORWARDED FORM
+            USER HAS SENT FORM
             ========================================= */
 
-            sentMovement.id IS NOT NULL)
+            EXISTS (
 
-            AND f.status NOT IN ('Pull Back', 'Draft')
+                SELECT 1
 
+                FROM form_movements sm
+
+                WHERE
+                    sm.form_id = f.id
+                    AND sm.from_user_id = :uid
+            )
+
+            OR
+
+            /* =========================================
+            USER HAS RECEIVED FORM
+            ========================================= */
+
+            EXISTS (
+
+                SELECT 1
+
+                FROM form_movements rm
+
+                WHERE
+                    rm.form_id = f.id
+                    AND rm.to_user_id = :uid
+            )
+        )
+
+        AND (
+
+            /* =========================================
+            EXCLUDE DRAFT
+            ========================================= */
+
+            f.status <> 'Draft'
+
+            AND
+
+            /* =========================================
+            PULL BACK CONDITION
+            ========================================= */
+
+            (
+
+                f.status <> 'Pull Back'
+
+                OR
+
+                (
+                    f.status = 'Pull Back'
+
+                    AND f.current_holder::INTEGER <> :uid
+                )
+            )
         )
 
         ORDER BY f.id DESC

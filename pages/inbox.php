@@ -47,7 +47,7 @@
                                     <th>Acquisition/Disposal</th>
                                     <th>Date of Acquisition/disposed</th>
                                     <th class="text-center">Status</th>
-                                    <th class="text-center">Created At</th>
+                                    <th class="text-center">Last Action Date</th>
                                     <th>Remarks</th>
                                     <th class="text-center">Action</th>
                                 </tr>
@@ -201,7 +201,7 @@
                         </td>
 
                         <td class="text-center">
-                            ${f.timestamps?.created_at ? f.timestamps.created_at.split(" ")[0] : ''}
+                            ${f.timestamps?.updated_at ? f.timestamps.updated_at.split(" ")[0] : ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>
