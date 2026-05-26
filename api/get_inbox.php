@@ -181,8 +181,11 @@ try {
         ========================================= */
 
         WHERE
-            f.current_holder = :uid
-            AND f.status <> 'Draft'
+            f.current_holder::INTEGER = :uid
+            AND (
+                f.status = 'Pending'
+                OR f.status = 'Pull Back'
+            )
 
         ORDER BY f.id DESC
     ";
@@ -255,13 +258,13 @@ try {
             "acquired_disposed" => $row['acquired_disposed'],
 
             "date_acquisition_disposed" =>
-                $row['date_acquisition_disposed'],
+            $row['date_acquisition_disposed'],
 
             "mode_acquisition" =>
-                $row['mode_acquisition'],
+            $row['mode_acquisition'],
 
             "mode_disposal" =>
-                $row['mode_disposal'],
+            $row['mode_disposal'],
 
             /* =========================================
                WORKFLOW
@@ -300,10 +303,10 @@ try {
                 "uid" => $row['current_holder_uid'],
 
                 "username" =>
-                    $row['current_holder_username'],
+                $row['current_holder_username'],
 
                 "role" =>
-                    $row['current_role_name']
+                $row['current_role_name']
             ],
 
             /* =========================================
@@ -336,7 +339,7 @@ try {
                     "username" => $row['from_username'],
 
                     "designation" =>
-                        $row['from_designation']
+                    $row['from_designation']
                 ],
 
                 "to_user" => [
@@ -346,7 +349,7 @@ try {
                     "username" => $row['to_username'],
 
                     "designation" =>
-                        $row['to_designation']
+                    $row['to_designation']
                 ]
             ],
 
@@ -357,19 +360,19 @@ try {
             "lock" => [
 
                 "is_locked" =>
-                    (bool)$row['is_locked'],
+                (bool)$row['is_locked'],
 
                 "locked_by" =>
-                    $row['locked_by'],
+                $row['locked_by'],
 
                 "locked_by_name" =>
-                    $row['locked_by_name'],
+                $row['locked_by_name'],
 
                 "locked_at" =>
-                    $row['locked_at'],
+                $row['locked_at'],
 
                 "is_locked_by_other" =>
-                    $isLockedByOther
+                $isLockedByOther
             ],
 
             /* =========================================
@@ -379,10 +382,10 @@ try {
             "open_state" => [
 
                 "is_opened" =>
-                    (bool)$row['is_opened'],
+                (bool)$row['is_opened'],
 
                 "opened_at" =>
-                    $row['opened_at']
+                $row['opened_at']
             ],
 
             /* =========================================
@@ -392,10 +395,10 @@ try {
             "permissions" => [
 
                 "is_current_holder" =>
-                    $isCurrentHolder,
+                $isCurrentHolder,
 
                 "can_take_action" =>
-                    $canTakeAction
+                $canTakeAction
             ],
 
             /* =========================================
@@ -411,10 +414,10 @@ try {
             "timestamps" => [
 
                 "created_at" =>
-                    $row['created_at'],
+                $row['created_at'],
 
                 "updated_at" =>
-                    $row['updated_at']
+                $row['updated_at']
             ]
         ];
     }
@@ -434,7 +437,6 @@ try {
         "data" => $data
 
     ], JSON_UNESCAPED_UNICODE);
-
 } catch (Exception $e) {
 
     echo json_encode([
@@ -445,4 +447,3 @@ try {
 
     ], JSON_UNESCAPED_UNICODE);
 }
-?>

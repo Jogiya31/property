@@ -69,13 +69,13 @@
 
                                     <th>Acquisition/Disposal</th>
 
-                                    <th>Date</th>
+                                    <th>Date of Acquisition/Disposal</th>
 
                                     <th class="text-center">Status</th>
 
-                                    <th class="text-center">Forwarded To</th>
+                                    <th class="text-center">Currently With</th>
 
-                                    <th class="text-center">Created At</th>
+                                    <th class="text-center">Last Action Date</th>
 
                                     <th>Remarks</th>
 
@@ -208,7 +208,7 @@
                 <div class="modal-content">
                     <div class="modal-header bg-warning">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">—</span></button>
+                            <span aria-hidden="true">x</span></button>
                         <h4 class="modal-title">Form History <strong id="formHistoryTitle"></strong></h4>
                     </div>
                     <div class="modal-body">
@@ -415,7 +415,7 @@
                         <td class="text-center"> ${currentHolder.username ?? ''}</td>
 
                         <td class="text-center">
-                            ${f.timestamps?.created_at ? f.timestamps.created_at.split(" ")[0] : ''}
+                            ${f.timestamps?.updated_at ? f.timestamps.updated_at.split(" ")[0] : ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>

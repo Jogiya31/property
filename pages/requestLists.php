@@ -37,7 +37,7 @@
                         <h3 class="box-title">Request List</h3>
                     </div>
                     <!-- /.box-header -->
-                    <div class="box-body">
+                    <div class="box-body table-responsive">
                         <table id="allData" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -47,8 +47,8 @@
                                     <th>Acquisition/Disposal</th>
                                     <th>Date of Acquisition/disposed</th>
                                     <th class="text-center">Status</th>
-                                    <th class="text-center">Forwarded To</th>
-                                    <th class="text-center">Created At</th>
+                                    <th class="text-center">Currently With</th>
+                                    <th class="text-center">Last Action Date</th>
                                     <th>Remarks</th>
                                     <th>Action</th>
                                 </tr>
@@ -175,7 +175,7 @@
                 <div class="modal-content">
                     <div class="modal-header bg-warning">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">—</span></button>
+                            <span aria-hidden="true">x</span></button>
                         <h4 class="modal-title">Form History <strong id="formHistoryTitle"></strong></h4>
                     </div>
                     <div class="modal-body">

@@ -27,7 +27,7 @@
                     </li>
                     <li>
                         <a href="outbox.php">
-                            <i class="fa fa-envelope-open"></i> <span>Outbox</span>
+                            <i class="fa fa-envelope-open"></i> <span>Sent</span>
                         </a>
                     </li>
                     <li class="treeview property-menu">

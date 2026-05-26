@@ -236,7 +236,7 @@ try {
 
             sentMovement.id IS NOT NULL)
 
-            AND f.status != 'Draft'
+            AND f.status NOT IN ('Pull Back', 'Draft')
 
         )
 

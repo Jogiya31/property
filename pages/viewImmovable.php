@@ -411,7 +411,7 @@
             <div class="modal-content">
                 <div class="modal-header bg-warning">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">—</span></button>
+                        <span aria-hidden="true">x</span></button>
                     <h4 class="modal-title">Form History</h4>
                 </div>
                 <div class="modal-body">
