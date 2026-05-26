@@ -387,10 +387,8 @@ try {
 
             updated_by = :updated_by,
 
-            updated_at = NOW(),
-
-            last_activity_at = NOW()
-
+            updated_at = NOW()
+            
         WHERE
 
             id = :id

@@ -254,7 +254,6 @@
             }
         }
 
-
         /* =========================================
            OPEN HISTORY MODAL
         ========================================= */
@@ -348,22 +347,23 @@
                 return;
             }
 
-            timeline.innerHTML = items.map(item => {
-                const action = escapeHtml(item.action_type || "Updated");
-                const by = escapeHtml(item.action_by_name || item.action_by || "Unknown");
-                const byRole = escapeHtml(item.action_by_role || "");
-                const to = escapeHtml(item.action_to_name || item.action_to || "");
-                const toRole = escapeHtml(item.action_to_role || "");
-                const remarks = escapeHtml(item.remarks || "");
-                const date = escapeHtml(formatHistoryDate(item.created_at).split(",")[0] || "");
-                const time = escapeHtml(formatHistoryDate(item.created_at).split(",")[1]?.trim() || "");
-                const oldValue = escapeHtml(item.old_value || "");
-                const newValue = escapeHtml(item.new_value || "");
-                const fieldName = escapeHtml(item.field_name || "");
-                const badgeClass = statusClass(item.action_type);
-                const iconClass = getTimelineIcon(item.action_type);
+            timeline.innerHTML = items.slice()
+                .reverse().map(item => {
+                    const action = escapeHtml(item.action_type || "Updated");
+                    const by = escapeHtml(item.action_by_name || item.action_by || "Unknown");
+                    const byRole = escapeHtml(item.action_by_role || "");
+                    const to = escapeHtml(item.action_to_name || item.action_to || "");
+                    const toRole = escapeHtml(item.action_to_role || "");
+                    const remarks = escapeHtml(item.remarks || "");
+                    const date = escapeHtml(formatHistoryDate(item.created_at).split(",")[0] || "");
+                    const time = escapeHtml(formatHistoryDate(item.created_at).split(",")[1]?.trim() || "");
+                    const oldValue = escapeHtml(item.old_value || "");
+                    const newValue = escapeHtml(item.new_value || "");
+                    const fieldName = escapeHtml(item.field_name || "");
+                    const badgeClass = statusClass(item.action_type);
+                    const iconClass = getTimelineIcon(item.action_type);
 
-                return `
+                    return `
                         <!-- timeline time label -->
                         <li class="time-label">
                             <span class="bg-${badgeClass}">
@@ -404,7 +404,7 @@
                 `
             }).join("");
         }
-
+        
         async function openFormHistory(formId) {
             if (!formId) {
                 showAlert("Form ID not found", "danger");
