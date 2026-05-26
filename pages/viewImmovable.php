@@ -721,6 +721,11 @@
             const fromUserId =
                 Number(data.latest_movement?.from_user?.uid);
 
+            // If logged in user is form owner, hide action section irrespective of the status
+            if (formOwnerId === loggedInUid) {
+                statusSection?.classList.add('d-none');
+                return;
+            }
 
             /* =========================================
                SHOW ACTION SECTION
@@ -804,10 +809,18 @@
                             loggedInRole === 'DG'
                         ) {
 
+                            if (data.status === 'Completed') {
+                                generateBtn?.classList.remove('d-none');
+                                revertBtn?.classList.add('d-none');
+                                forwardBtn?.classList.add('d-none');
+                                forwardSection?.classList.add('d-none');
+                                remarkSection?.classList.add('d-none');
+                            } else {
+                                generateBtn?.classList.remove('d-none');
+                                forwardBtn?.classList.add('d-none');
+                                forwardSection?.classList.add('d-none');
+                            }
 
-                            generateBtn?.classList.remove('d-none');
-                            forwardBtn?.classList.add('d-none');
-                            forwardSection?.classList.add('d-none');
                         }
                     }
 
@@ -1173,7 +1186,7 @@
         }
 
         async function openFormHistory() {
-            
+
             const timeline = document.getElementById("formHistoryTimeline");
             if (timeline) {
                 timeline.innerHTML = `<li class="form-history-empty">Loading history...</li>`;

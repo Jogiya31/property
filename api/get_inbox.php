@@ -29,172 +29,241 @@ try {
 
     $sql = "
 
-        SELECT
+    SELECT
 
-            f.id,
-            f.reference_no,
-            f.form_type,
-            f.purpose,
-            f.acquired_disposed,
-            f.date_acquisition_disposed,
-            f.mode_acquisition,
-            f.mode_disposal,
+        f.id,
+        f.reference_no,
+        f.form_type,
+        f.purpose,
+        f.acquired_disposed,
+        f.date_acquisition_disposed,
+        f.mode_acquisition,
+        f.mode_disposal,
 
-            f.status,
-            f.current_phase,
-            f.last_action,
-            f.remarks,
+        f.status,
+        f.current_phase,
+        f.last_action,
+        f.remarks,
 
-            f.created_at,
-            f.updated_at,
+        f.created_at,
+        f.updated_at,
 
-            f.current_holder,
-            f.current_role_name,
+        f.current_holder,
+        f.current_role_name,
 
-            f.forward_to,
+        f.forward_to,
 
-            f.is_locked,
-            f.locked_by,
-            f.locked_at,
+        f.is_locked,
+        f.locked_by,
+        f.locked_at,
 
-            f.is_opened,
-            f.opened_at,
-
-            /* =========================================
-               OWNER
-            ========================================= */
-
-            owner.uid AS owner_uid,
-            owner.username AS owner_username,
-            owner.designation AS owner_designation,
-
-            /* =========================================
-               CURRENT HOLDER
-            ========================================= */
-
-            currentUser.uid AS current_holder_uid,
-            currentUser.username AS current_holder_username,
-
-            /* =========================================
-               FORWARD USER
-            ========================================= */
-
-            forwardUser.uid AS forward_uid,
-            forwardUser.username AS forward_username,
-
-            /* =========================================
-               LATEST MOVEMENT
-            ========================================= */
-
-            latestMovement.id AS movement_id,
-            latestMovement.action AS movement_action,
-            latestMovement.created_at AS movement_date,
-
-            latestMovement.from_user_id,
-            latestMovement.to_user_id,
-
-            /* =========================================
-               FROM USER
-            ========================================= */
-
-            fromUser.username AS from_username,
-            fromUser.designation AS from_designation,
-
-            /* =========================================
-               TO USER
-            ========================================= */
-
-            toUser.username AS to_username,
-            toUser.designation AS to_designation,
-
-            /* =========================================
-               LOCK USER
-            ========================================= */
-
-            lockUser.username AS locked_by_name
-
-        FROM forms f
+        f.is_opened,
+        f.opened_at,
 
         /* =========================================
            OWNER
         ========================================= */
 
-        LEFT JOIN users owner
-            ON owner.uid = f.uid::INTEGER
+        owner.uid AS owner_uid,
+        owner.username AS owner_username,
+        owner.designation AS owner_designation,
 
         /* =========================================
            CURRENT HOLDER
         ========================================= */
 
-        LEFT JOIN users currentUser
-            ON currentUser.uid = f.current_holder
+        currentUser.uid AS current_holder_uid,
+        currentUser.username AS current_holder_username,
 
         /* =========================================
            FORWARD USER
         ========================================= */
 
-        LEFT JOIN users forwardUser
-            ON forwardUser.uid = f.forward_to
-
-        /* =========================================
-           LOCK USER
-        ========================================= */
-
-        LEFT JOIN users lockUser
-            ON lockUser.uid = f.locked_by
+        forwardUser.uid AS forward_uid,
+        forwardUser.username AS forward_username,
 
         /* =========================================
            LATEST MOVEMENT
         ========================================= */
 
-        LEFT JOIN LATERAL (
+        latestMovement.id AS movement_id,
+        latestMovement.action AS movement_action,
+        latestMovement.created_at AS movement_date,
 
-            SELECT
-                fm.*
-
-            FROM form_movements fm
-
-            WHERE fm.form_id = f.id
-
-            ORDER BY fm.id DESC
-
-            LIMIT 1
-
-        ) latestMovement ON true
+        latestMovement.from_user_id,
+        latestMovement.to_user_id,
 
         /* =========================================
            FROM USER
         ========================================= */
 
-        LEFT JOIN users fromUser
-            ON fromUser.uid = latestMovement.from_user_id
+        fromUser.username AS from_username,
+        fromUser.designation AS from_designation,
 
         /* =========================================
            TO USER
         ========================================= */
 
-        LEFT JOIN users toUser
-            ON toUser.uid = latestMovement.to_user_id
+        toUser.username AS to_username,
+        toUser.designation AS to_designation,
 
         /* =========================================
-           INBOX FILTER
+           LOCK USER
         ========================================= */
 
-        WHERE
+        lockUser.username AS locked_by_name
+
+    FROM forms f
+
+    /* =========================================
+       OWNER
+    ========================================= */
+
+    LEFT JOIN users owner
+        ON owner.uid = f.uid::INTEGER
+
+    /* =========================================
+       CURRENT HOLDER
+    ========================================= */
+
+    LEFT JOIN users currentUser
+        ON currentUser.uid = f.current_holder::INTEGER
+
+    /* =========================================
+       FORWARD USER
+    ========================================= */
+
+    LEFT JOIN users forwardUser
+        ON forwardUser.uid = f.forward_to::INTEGER
+
+    /* =========================================
+       LOCK USER
+    ========================================= */
+
+    LEFT JOIN users lockUser
+        ON lockUser.uid = f.locked_by::INTEGER
+
+    /* =========================================
+       LATEST MOVEMENT
+    ========================================= */
+
+    LEFT JOIN LATERAL (
+
+        SELECT
+            fm.*
+
+        FROM form_movements fm
+
+        WHERE fm.form_id = f.id
+
+        ORDER BY fm.id DESC
+
+        LIMIT 1
+
+    ) latestMovement ON true
+
+    /* =========================================
+       FROM USER
+    ========================================= */
+
+    LEFT JOIN users fromUser
+        ON fromUser.uid = latestMovement.from_user_id
+
+    /* =========================================
+       TO USER
+    ========================================= */
+
+    LEFT JOIN users toUser
+        ON toUser.uid = latestMovement.to_user_id
+";
+
+    /* =========================================
+    DYNAMIC CONDITIONS
+    ========================================= */
+
+    $params = [
+        ':uid' => $loggedInUserId
+    ];
+
+    /* =========================================
+    INBOX + COMPLETED
+    ========================================= */
+
+    $where = "
+
+    (
+
+        /* =========================================
+        ACTIVE INBOX
+        ========================================= */
+
+        f.current_holder::INTEGER = :uid
+
+        AND f.status IN (
+
+            'Forwarded',
+            'Pending',
+            'Pull Back'
+        )
+    )
+
+    OR
+
+    (
+
+        /* =========================================
+        COMPLETED FORMS
+        ========================================= */
+
+        
+    f.status IN (
+
+        'Completed',
+        'Rejected'
+    )
+
+        AND (
+
+            f.uid::INTEGER = :uid
+
+            OR
+
             f.current_holder::INTEGER = :uid
-            AND (
-                f.status = 'Pending'
-                OR f.status = 'Pull Back'
-            )
+        )
+    )
+    
+    OR
+
+    (
+
+        /* =========================================
+        REJECTED
+        ========================================= */
+
+        f.status = 'Rejected'
+
+        AND f.uid::INTEGER = :uid
+)
+    ";
+
+    /* =========================================
+    FINAL QUERY
+    ========================================= */
+
+    $sql .= "
+
+        WHERE $where
 
         ORDER BY f.id DESC
     ";
+    /* =========================================
+    EXECUTE
+    ========================================= */
 
     $stmt = $conn->prepare($sql);
 
-    $stmt->execute([
-        ':uid' => $loggedInUserId
-    ]);
+    $stmt->execute($params);
+
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

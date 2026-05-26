@@ -230,18 +230,11 @@
                     }
                 } else {
 
-                    if (f.workflow?.status === "Pull Back" && f.permissions?.can_take_action === true && f.current_holder?.uid === parseInt(sessionStorage.getItem("uid"))) {
-                        if (f.form_type === 'immovable') {
-                            actionButtons += `<a href="immovableForm.php?id=${f.id}" class="btn btn-sm btn-warning">Edit</a> `;
-                        } else {
-                            actionButtons += `<a href="movableForm.php?id=${f.id}" class="btn btn-sm btn-warning">Edit</a> `;
-                        }
-                    }
-
                     if (
                         f.permissions?.can_pullback === true &&
                         f.lock?.is_locked === false &&
-                        f.open_state?.is_opened === false
+                        f.open_state?.is_opened === false &&
+                        f.uid === parseInt(sessionStorage.getItem("uid"))
                     ) {
                         const viewUrl =
                             f.form_type === 'immovable' ?
@@ -289,6 +282,7 @@
                                 f.workflow?.status === 'Pending' ? 'bg-yellow' :
                                 f.workflow?.status === 'Forwarded' ? 'bg-aqua' :
                                 f.workflow?.status === 'Rejected' ? 'bg-red' :
+                                f.workflow?.status === 'Completed' ? 'bg-green' :
                                 f.workflow?.status === 'Draft' ? 'bg-gray' : ''
                             }">
                                 ${f.workflow?.status ?? f.status ?? ''}

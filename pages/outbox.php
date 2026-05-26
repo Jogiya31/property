@@ -377,7 +377,7 @@
 
                     statusClass = 'bg-red';
 
-                } else if (workflow.status === 'Approved') {
+                } else if (workflow.status === 'Completed') {
 
                     statusClass = 'bg-green';
                 }
@@ -406,6 +406,7 @@
                                 f.workflow?.status === 'Pending' ? 'bg-yellow' :
                                 f.workflow?.status === 'Forwarded' ? 'bg-aqua' :
                                 f.workflow?.status === 'Rejected' ? 'bg-red' :
+                                f.workflow?.status === 'Completed' ? 'bg-green' :
                                 f.workflow?.status === 'Draft' ? 'bg-gray' : ''
                             }">
                                 ${f.workflow?.status ?? ''}

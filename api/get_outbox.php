@@ -222,74 +222,53 @@ try {
 
         WHERE (
 
-            /* =========================================
-            FORM OWNER
-            ========================================= */
+    /* =========================================
+       FORM OWNER
+    ========================================= */
 
-            f.uid::INTEGER = :uid
+    f.uid::INTEGER = :uid
 
-            OR
+    OR
 
-            /* =========================================
-            USER HAS SENT FORM
-            ========================================= */
+    /* =========================================
+       USER HAS SENT FORM
+    ========================================= */
 
-            EXISTS (
+    EXISTS (
 
-                SELECT 1
+        SELECT 1
 
-                FROM form_movements sm
+        FROM form_movements sm
 
-                WHERE
-                    sm.form_id = f.id
-                    AND sm.from_user_id = :uid
-            )
+        WHERE
+            sm.form_id = f.id
+            AND sm.from_user_id = :uid
+    )
+)
 
-            OR
+/* =========================================
+   CURRENT HOLDER SHOULD NOT BE LOGGED-IN USER
+========================================= */
 
-            /* =========================================
-            USER HAS RECEIVED FORM
-            ========================================= */
+AND f.current_holder::INTEGER <> :uid
 
-            EXISTS (
+/* =========================================
+   EXCLUDE DRAFT
+========================================= */
 
-                SELECT 1
+AND f.status <> 'Draft'
 
-                FROM form_movements rm
+/* =========================================
+   EXCLUDE PULL BACK RETURNED TO USER
+========================================= */
 
-                WHERE
-                    rm.form_id = f.id
-                    AND rm.to_user_id = :uid
-            )
-        )
+AND NOT (
 
-        AND (
+    f.status = 'Pull Back'
 
-            /* =========================================
-            EXCLUDE DRAFT
-            ========================================= */
+    AND f.current_holder::INTEGER = :uid
+)
 
-            f.status <> 'Draft'
-
-            AND
-
-            /* =========================================
-            PULL BACK CONDITION
-            ========================================= */
-
-            (
-
-                f.status <> 'Pull Back'
-
-                OR
-
-                (
-                    f.status = 'Pull Back'
-
-                    AND f.current_holder::INTEGER <> :uid
-                )
-            )
-        )
 
         ORDER BY f.id DESC
     ";
