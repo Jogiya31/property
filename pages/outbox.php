@@ -200,10 +200,13 @@
 
         </div>
 
+        <!-- =============================================== -->
+        <!-- HISTORY MODAL -->
+        <!-- =============================================== -->
         <div class="modal fade" id="historyModal" tabindex="-1">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header bg-warning">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">—</span></button>
                         <h4 class="modal-title">Form History <strong id="formHistoryTitle"></strong></h4>
@@ -283,77 +286,34 @@
 
                 const timestamps = f.timestamps || {};
 
-
-
                 /* =====================================
-                   LOCK STATUS
+                    VIEW BUTTON
                 ===================================== */
-
-                let disabled = "";
-
-                let lockText = "";
-
-                if (
-                    f.is_locked == true &&
-                    parseInt(f.locked_by) !== parseInt(sessionStorage.getItem("uid"))
-                ) {
-
-                    disabled = "disabled";
-
-                    lockText = `
-                            <small class="text-danger">
-                                Locked by ${f.locked_by_name ?? 'Another User'}
-                                Locked
-                            </small>
-                        `;
-                }
-
-                /* =====================================
-                       VIEW BUTTON
-                    ===================================== */
 
                 if (f.form_type === 'immovable') {
 
                     actionBtn = `
-                            <button
-                                class="btn btn-primary view-btn btn-sm"
-                                ${disabled}
-                                onclick="openForm(${f.id}, 'viewImmovable.php')"
-                                title="View Form"
-                            > View
-                            </button>
-
-                            ${lockText}
-                        `;
+                        <button
+                            class="btn btn-primary view-btn btn-sm"
+                            onclick="openForm(${f.id}, 'viewImmovable.php')"
+                            title="View Form"
+                        >
+                        View
+                        </button>
+                    `;
 
                 } else {
 
                     actionBtn = `
-                            <button
-                                class="btn btn-primary view-btn btn-sm"
-                                ${disabled}
-                                onclick="openForm(${f.id}, 'viewmovable.php')"
-                                title="View Form"
-                            >View
-                            </button>
-
-                            ${lockText}
-                        `;
-
-                }
-
-                /* =========================================
-                   LOCK LABEL
-                ========================================= */
-
-                if (lock.is_locked === true && lock.locked_by !== parseInt(sessionStorage.getItem('uid')) && formOwner.uid !== parseInt(sessionStorage.getItem('uid'))) {
-
-                    actionBtn += `
-                        <span
-                            class="btn btn-danger  btn-sm" style="cursor: no-drop" title="Locked by ${f.lock.locked_by_name ?? 'Another User'}">
-                           Locked
-                        </span>
+                        <button
+                            class="btn btn-primary view-btn btn-sm"
+                            onclick="openForm(${f.id}, 'viewmovable.php')"
+                            title="View Form"
+                        >
+                        View
+                        </button>
                     `;
+
                 }
 
                 /* =========================================
@@ -373,19 +333,18 @@
                     openState.is_opened === false
                 ) {
 
+                    const viewUrl =
+                        f.form_type === 'immovable' ?
+                        `viewImmovable.php?id=${f.id}` :
+                        `viewmovable.php?id=${f.id}`;
+
                     actionBtn += `
                         <button
                             class="btn btn-warning btn-sm"
-                            onclick="openPullBackModal(
-                                ${f.id},
-                                ${f.form_type === 'immovable' ?
-                                    `viewImmovable.php?id=${f.id}` :
-                                    `viewmovable.php?id=${f.id}`
-                                }"
-                            )"
+                            onclick="openPullBackModal(${f.id}, '${viewUrl}')"
                             title="Pull Back Form"
                         >
-                          Pull Back
+                            Pull Back
                         </button>
                     `;
                 }
@@ -485,22 +444,27 @@
 
             try {
 
-                const formData = new FormData();
+                const form = allData.find(x => x.id == formId);
 
-                formData.append("form_id", formId);
+                if (form.current_holder?.uid === parseInt(sessionStorage.getItem("uid"))) {
 
-                const res = await fetch("../api/lock_form.php", {
-                    method: "POST",
-                    body: formData
-                });
+                    const formData = new FormData();
 
-                const json = await res.json();
+                    formData.append("form_id", formId);
 
-                if (!json.success) {
+                    const res = await fetch("../api/lock_form.php", {
+                        method: "POST",
+                        body: formData
+                    });
 
-                    alert(json.error || "Unable to lock form");
+                    const json = await res.json();
 
-                    return;
+                    if (!json.success) {
+
+                        alert(json.error || "Unable to lock form");
+
+                        return;
+                    }
                 }
 
                 window.location.href = `${redirectPage}?id=${formId}`;

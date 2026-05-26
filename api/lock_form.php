@@ -42,12 +42,7 @@ try {
 
     $stmt = $conn->prepare("
         SELECT
-            id,
-            is_locked,
-            locked_by,
-            locked_at,
-            is_opened,
-            opened_at
+           *
         FROM forms
         WHERE id = :id
         LIMIT 1
@@ -80,7 +75,7 @@ try {
 
         !empty($form['opened_at'])
 
-        && strtotime($form['opened_at']) < strtotime('-1 day')
+        && strtotime($form['opened_at']) < strtotime('-1 minute')
 
     ) {
 
@@ -151,7 +146,7 @@ try {
 
                 is_locked = true
 
-                AND opened_at < NOW() - INTERVAL '1 day'
+                AND opened_at < NOW() - INTERVAL '1 minute'
             )
         )
     ");

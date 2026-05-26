@@ -138,28 +138,6 @@
                 } else {
 
                     /* =====================================
-                       LOCK STATUS
-                    ===================================== */
-
-                    let disabled = "";
-
-                    let lockText = "";
-
-                    if (
-                        f.is_locked == true &&
-                        parseInt(f.locked_by) !== parseInt(sessionStorage.getItem("uid"))
-                    ) {
-
-                        disabled = "disabled";
-
-                        lockText = `
-                            <small class="text-danger" title="Locked by ${f.locked_by_name ?? 'Another User'}">
-                               Locked
-                            </small>
-                        `;
-                    }
-
-                    /* =====================================
                        VIEW BUTTON
                     ===================================== */
 
@@ -168,13 +146,10 @@
                         actionButtons = `
                             <button
                                 class="btn btn-primary view-btn btn-sm"
-                                ${disabled}
                                 onclick="openForm(${f.id}, 'viewImmovable.php')"
                             >
                                 View
                             </button>
-
-                            ${lockText}
                         `;
 
                     } else {
@@ -182,13 +157,10 @@
                         actionButtons = `
                             <button
                                 class="btn btn-primary view-btn btn-sm"
-                                ${disabled}
                                 onclick="openForm(${f.id}, 'viewmovable.php')"
                             >
                                 View
                             </button>
-
-                            ${lockText}
                         `;
 
                     }

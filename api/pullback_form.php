@@ -69,16 +69,16 @@ try {
         throw new Exception("Form not found");
     }
 
-    /* =====================================================
-       VALIDATION
-    ====================================================== */
+    // /* =====================================================
+    //    VALIDATION
+    // ====================================================== */
 
-    if ($form['status'] !== 'Forwarded') {
+    // if ($form['status'] !== 'Forwarded') {
 
-        throw new Exception(
-            "Only forwarded forms can be pulled back"
-        );
-    }
+    //     throw new Exception(
+    //         "Only forwarded forms can be pulled back"
+    //     );
+    // }
 
     /*
     |---------------------------------------------------------

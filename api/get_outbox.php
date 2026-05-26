@@ -48,7 +48,7 @@ try {
 
             AND opened_at IS NOT NULL
 
-            AND opened_at < NOW() - INTERVAL '1 day'
+            AND opened_at < NOW() - INTERVAL '1 minute'
 
     ");
 
@@ -256,6 +256,170 @@ try {
     foreach ($rows as $row) {
 
         /* =====================================================
+        FORM + USER + LATEST MOVEMENT
+        ====================================================== */
+
+        $innerstmt = $conn->prepare("
+            SELECT
+
+                f.*,
+
+                owner.username AS owner_username,
+                owner.email,
+                owner.designation,
+                owner.service,
+                owner.emp_code,
+                owner.payscale,
+                owner.address,
+                owner.state,
+
+                currentHolder.username AS current_holder_name,
+
+                latestMovement.id AS movement_id,
+                latestMovement.action AS movement_action,
+                latestMovement.created_at AS movement_created_at,
+
+                latestMovement.from_user_id,
+                latestMovement.to_user_id,
+
+                sender.username AS sender_username,
+                receiver.username AS receiver_username
+
+            FROM forms f
+
+            LEFT JOIN users owner
+                ON owner.uid = f.uid::INTEGER
+
+            LEFT JOIN users currentHolder
+                ON currentHolder.uid = f.current_holder
+
+            LEFT JOIN LATERAL (
+
+                SELECT
+                    fm.*
+                FROM form_movements fm
+                WHERE fm.form_id = f.id
+                ORDER BY fm.id DESC
+                LIMIT 1
+
+            ) latestMovement ON true
+
+            LEFT JOIN users sender
+                ON sender.uid = latestMovement.from_user_id
+
+            LEFT JOIN users receiver
+                ON receiver.uid = latestMovement.to_user_id
+
+            WHERE f.id = :id
+
+            LIMIT 1
+        ");
+
+        $innerstmt->execute([
+            ':id' => $row['id'],
+        ]);
+
+        $formRow = $innerstmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$formRow) {
+
+            echo json_encode([
+                "success" => false,
+                "error" => "Form not found"
+            ]);
+            exit;
+        }
+
+        /* =====================================================
+        USER ROLE FLAGS
+        ====================================================== */
+
+        $loggedInUserId = $_SESSION["uid"] ?? null;
+
+        $isFormOwner =
+            (int)$formRow['uid'] === (int)$loggedInUserId;
+
+        $isCurrentHolder =
+            (int)$formRow['current_holder'] === (int)$loggedInUserId;
+
+        $isLatestSender =
+            (int)$formRow['from_user_id'] === (int)$loggedInUserId;
+
+        $isLatestReceiver =
+            (int)$formRow['to_user_id'] === (int)$loggedInUserId;
+
+
+        /* =====================================================
+        CAN PULLBACK
+        ===================================================== */
+
+        $canPullBack = false;
+
+        if (
+            $formRow['status'] === 'Forwarded'
+            && (int)$formRow['from_user_id'] === (int)$loggedInUserId
+            && (int)$formRow['current_holder'] === (int)$formRow['to_user_id']
+            && !(bool)$formRow['is_locked']
+            && !(bool)$formRow['is_opened']
+        ) {
+
+            $canPullBack = true;
+        }
+
+        /* =====================================================
+        CAN TAKE ACTION
+        ===================================================== */
+
+        $canTakeAction = false;
+
+        /* =========================================
+        USER CONDITIONS
+        ========================================= */
+
+        $isCurrentHolder = (
+            (int)$formRow['current_holder'] === (int)$loggedInUserId
+        );
+
+        $isLatestSender = (
+            (int)$formRow['from_user_id'] === (int)$loggedInUserId
+        );
+
+        /* =========================================
+            LOCK CONDITIONS
+            ========================================= */
+
+        $isLocked = (bool)$formRow['is_locked'];
+
+        $isLockedByLoggedInUser = (
+            $isLocked
+            && (int)$formRow['locked_by'] === (int)$loggedInUserId
+        );
+
+        /* =========================================
+            TAKE ACTION RULES
+
+            1. User is current holder OR latest sender
+            2. File is not locked
+                OR
+                File is locked by logged in user
+            ========================================= */
+
+        if (
+            $isCurrentHolder ||
+            $isLatestSender
+        ) {
+
+            if (
+                !$isLocked
+                ||
+                $isLockedByLoggedInUser
+            ) {
+
+                $canTakeAction = true;
+            }
+        }
+
+        /* =====================================================
            CAN PULLBACK
         ====================================================== */
 
@@ -373,6 +537,33 @@ try {
                 "username" => $row['receiver_name']
             ],
 
+            /* =============================================
+            LATEST MOVEMENT
+            ============================================= */
+
+            "latest_movement" => [
+
+                "id" => $formRow["movement_id"],
+
+                "action" => $formRow["movement_action"],
+
+                "created_at" => $formRow["movement_created_at"],
+
+                "from_user" => [
+
+                    "uid" => $formRow["from_user_id"],
+
+                    "username" => $formRow["sender_username"]
+                ],
+
+                "to_user" => [
+
+                    "uid" => $formRow["to_user_id"],
+
+                    "username" => $formRow["receiver_username"]
+                ]
+            ],
+
             /* =========================================
                CURRENT HOLDER
             ========================================= */
@@ -433,7 +624,17 @@ try {
 
             "permissions" => [
 
-                "can_pullback" => $canPullBack
+                "is_form_owner" => $isFormOwner,
+
+                "is_current_holder" => $isCurrentHolder,
+
+                "is_latest_sender" => $isLatestSender,
+
+                "is_latest_receiver" => $isLatestReceiver,
+
+                "can_pullback" => $canPullBack,
+
+                "can_take_action" => $canTakeAction
             ],
 
             /* =========================================

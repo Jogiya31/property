@@ -126,7 +126,7 @@ try {
 
         $isExpired =
             strtotime($form['opened_at'])
-            < strtotime('-1 day');
+            < strtotime('-1 minute');
     }
 
     /*

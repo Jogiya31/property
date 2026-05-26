@@ -376,7 +376,7 @@
     <div class="modal fade" id="previewModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-warning">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span></button>
                     <h4 class="modal-title">File Preview</h4>
@@ -392,7 +392,7 @@
     <div class="modal fade" id="memo" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-warning">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span></button>
                     <h4 class="modal-title">Memo Preview</h4>
@@ -409,7 +409,7 @@
     <div class="modal fade" id="historyModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-warning">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">—</span></button>
                     <h4 class="modal-title">Form History</h4>
