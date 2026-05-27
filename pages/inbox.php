@@ -45,7 +45,7 @@
                                     <th>Property Type</th>
                                     <th>Purposes</th>
                                     <th>Acquisition/Disposal</th>
-                                    <th>Date of Acquisition/disposed</th>
+                                    <th>Create Date</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center">Last Action Date</th>
                                     <th>Remarks</th>
@@ -120,7 +120,7 @@
 
                         actionButtons = `
                             <a href="immovableForm.php?id=${f.id}" 
-                            class="btn btn-sm btn-warning edit-btn">
+                            class="btn btn-sm btn-warning edit-btn mt-1">
                                 Edit
                             </a>
                         `;
@@ -129,7 +129,7 @@
 
                         actionButtons = `
                             <a href="movableForm.php?id=${f.id}" 
-                            class="btn btn-sm btn-warning edit-btn">
+                            class="btn btn-sm btn-warning edit-btn mt-1">
                                 Edit
                             </a>
                         `;
@@ -145,7 +145,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-primary view-btn btn-sm"
+                                class="btn btn-primary view-btn btn-sm mt-1"
                                 onclick="openForm(${f.id}, 'viewImmovable.php')"
                             >
                                 View
@@ -156,7 +156,7 @@
 
                         actionButtons = `
                             <button
-                                class="btn btn-primary view-btn btn-sm"
+                                class="btn btn-primary view-btn btn-sm mt-1"
                                 onclick="openForm(${f.id}, 'viewmovable.php')"
                             >
                                 View
@@ -167,7 +167,7 @@
 
                     actionButtons += `
                         <button
-                            class="btn bg-purple btn-sm"
+                            class="btn bg-purple btn-sm mt-1"
                             onclick="openFormHistory(${f.id})"
                         >
                             History
@@ -187,7 +187,7 @@
 
                         <td>${f.acquired_disposed ?? ''}</td>
 
-                        <td>${f.date_acquisition_disposed ?? ''}</td>
+                        <td>${f.timestamps?.created_at ?? ''}</td>
 
                         <td class="text-center">
                             <span class="badge ${
@@ -202,7 +202,7 @@
                         </td>
 
                         <td class="text-center">
-                            ${f.timestamps?.updated_at ? f.timestamps.updated_at.split(" ")[0] : ''}
+                            ${f.timestamps?.updated_at ?? ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>
@@ -403,9 +403,9 @@
                         </li>
                         <!-- END timeline item -->
                 `
-            }).join("");
+                }).join("");
         }
-        
+
         async function openFormHistory(formId) {
             if (!formId) {
                 showAlert("Form ID not found", "danger");

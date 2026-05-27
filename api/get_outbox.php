@@ -222,53 +222,63 @@ try {
 
         WHERE (
 
-    /* =========================================
-       FORM OWNER
-    ========================================= */
+            /* =========================================
+            FORM OWNER
+            ========================================= */
 
-    f.uid::INTEGER = :uid
+            f.uid::INTEGER = :uid
 
-    OR
+            OR
 
-    /* =========================================
-       USER HAS SENT FORM
-    ========================================= */
+            /* =========================================
+            USER HAS SENT FORM
+            ========================================= */
 
-    EXISTS (
+            EXISTS (
 
-        SELECT 1
+                SELECT 1
 
-        FROM form_movements sm
+                FROM form_movements sm
 
-        WHERE
-            sm.form_id = f.id
-            AND sm.from_user_id = :uid
-    )
-)
+                WHERE
+                    sm.form_id = f.id
+                    AND sm.from_user_id = :uid
+            )
+        )
 
-/* =========================================
-   CURRENT HOLDER SHOULD NOT BE LOGGED-IN USER
-========================================= */
+        /* =========================================
+        CURRENT HOLDER SHOULD NOT BE LOGGED-IN USER
+        ========================================= */
 
-AND f.current_holder::INTEGER <> :uid
+        AND f.current_holder::INTEGER <> :uid
 
-/* =========================================
-   EXCLUDE DRAFT
-========================================= */
+        /* =========================================
+        EXCLUDE DRAFT
+        ========================================= */
 
-AND f.status <> 'Draft'
+        AND f.status <> 'Draft'
 
-/* =========================================
-   EXCLUDE PULL BACK RETURNED TO USER
-========================================= */
+        /* =========================================
+        EXCLUDE PULL BACK RETURNED TO USER
+        ========================================= */
 
-AND NOT (
+        AND NOT (
 
-    f.status = 'Pull Back'
+            f.status = 'Pull Back'
 
-    AND f.current_holder::INTEGER = :uid
-)
+            AND f.current_holder::INTEGER = :uid
+        )
+        
+        /* =========================================
+        EXCLUDE Complete
+        ========================================= */
 
+        AND NOT (
+
+            f.status = 'Completed'
+
+            AND f.uid::INTEGER = :uid
+        )
 
         ORDER BY f.id DESC
     ";
@@ -673,9 +683,9 @@ AND NOT (
 
             "timestamps" => [
 
-                "created_at" => $row['created_at'],
+                "created_at" => date("d-m-Y h:i A", strtotime($row['created_at'])),
 
-                "updated_at" => $row['updated_at']
+                "updated_at" => date("d-m-Y h:i A", strtotime($row['updated_at']))
             ]
         ];
     }
@@ -687,8 +697,6 @@ AND NOT (
     echo json_encode([
 
         "success" => true,
-
-        "req_type" => "outbox",
 
         "count" => count($data),
 

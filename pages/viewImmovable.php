@@ -240,7 +240,7 @@
                             <div class="row">
 
                                 <div
-                                    class="col-md-3 d-none"
+                                    class="col-md-3"
                                     id="correctOM-container">
 
                                     <input
@@ -659,9 +659,14 @@
             const generateBtn =
                 document.getElementById('generatebtn');
 
+            const correctOMContainer =
+                document.getElementById('correctOM-container');
+
             /* =========================================
                DEFAULT HIDE
             ========================================= */
+
+            correctOMContainer?.classList.add('d-none');
 
             forwardBtn?.classList.add('d-none');
 
@@ -773,6 +778,7 @@
 
                         if (isCurrentHolder) {
 
+                            correctOMContainer?.classList.remove('d-none');
 
                             forwardBtn?.classList.remove('d-none');
 
@@ -1070,6 +1076,7 @@
             if (action.includes("submit") || action.includes("created")) return "green";
             if (action.includes("pull")) return "yellow";
             if (action.includes("draft")) return "gray";
+            if (action.includes("generate")) return "green";
 
             return "aqua";
         }
@@ -1095,7 +1102,7 @@
                 return 'fa-close';
             }
 
-            if (action.includes('approve')) {
+            if (action.includes('generate')) {
                 return 'fa-thumbs-up';
             }
 

@@ -482,11 +482,9 @@ try {
 
             "timestamps" => [
 
-                "created_at" =>
-                $row['created_at'],
+                "created_at" => date("d-m-Y h:i A", strtotime($row['created_at'])),
 
-                "updated_at" =>
-                $row['updated_at']
+                "updated_at" => date("d-m-Y h:i A", strtotime($row['updated_at']))
             ]
         ];
     }
@@ -498,8 +496,6 @@ try {
     echo json_encode([
 
         "success" => true,
-
-        "req_type" => "inbox",
 
         "count" => count($data),
 

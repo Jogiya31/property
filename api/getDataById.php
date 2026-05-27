@@ -443,9 +443,9 @@ try {
 
         "remarks" => $formRow["remarks"],
 
-        "created_at" => $formRow["created_at"],
+        "created_at" => date("d-m-Y h:i A", strtotime($formRow['created_at'])),
 
-        "updated_at" => $formRow["updated_at"],
+        "updated_at" => date("d-m-Y h:i A", strtotime($formRow['updated_at'])),
 
         "correctom" => $formRow["correctom"],
 

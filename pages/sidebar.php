@@ -22,7 +22,38 @@
                     </li>
                     <li>
                         <a href="inbox.php">
-                            <i class="fa fa-envelope"></i> <span>Inbox</span>
+                            <?php
+
+                            if (!isset($conn)) {
+                                require_once __DIR__ . '/../connection/db.php';
+                            }
+
+                            $stmt = $conn->prepare("
+                                SELECT COUNT(*) AS total
+                                FROM forms
+                                WHERE
+                                    current_holder::INTEGER = :uid
+                                    AND status IN (
+                                        'Pending',
+                                        'Forwarded',
+                                        'Pull Back'
+                                    )
+                            ");
+                            $stmt->execute([
+                                ':uid' => $_SESSION['uid']
+                            ]);
+
+                            $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                            ?>
+                            <i class="fa fa-inbox"></i>
+                            <span>Inbox</span>
+                            <?php if ($count > 0): ?>
+                                <span class="pull-right-container">
+                                    <small class="label pull-right bg-green">
+                                        <?php echo $count; ?>
+                                    </small>
+                                </span>
+                            <?php endif; ?>
                         </a>
                     </li>
                     <li>

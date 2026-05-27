@@ -69,7 +69,7 @@
 
                                     <th>Acquisition/Disposal</th>
 
-                                    <th>Date of Acquisition/Disposal</th>
+                                    <th>Create Date</th>
 
                                     <th class="text-center">Status</th>
 
@@ -294,7 +294,7 @@
 
                     actionBtn = `
                         <button
-                            class="btn btn-primary view-btn btn-sm"
+                            class="btn btn-primary view-btn btn-sm mt-1"
                             onclick="openForm(${f.id}, 'viewImmovable.php')"
                             title="View Form"
                         >
@@ -306,7 +306,7 @@
 
                     actionBtn = `
                         <button
-                            class="btn btn-primary view-btn btn-sm"
+                            class="btn btn-primary view-btn btn-sm mt-1"
                             onclick="openForm(${f.id}, 'viewmovable.php')"
                             title="View Form"
                         >
@@ -340,7 +340,7 @@
 
                     actionBtn += `
                         <button
-                            class="btn btn-warning btn-sm"
+                            class="btn btn-warning btn-sm mt-1"
                             onclick="openPullBackModal(${f.id}, '${viewUrl}')"
                             title="Pull Back Form"
                         >
@@ -351,7 +351,7 @@
 
                 actionBtn += `
                     <button
-                        class="btn bg-purple btn-sm"
+                        class="btn bg-purple btn-sm mt-1"
                         onclick="openFormHistory(${f.id})"
                         title="View History"
                     >
@@ -399,7 +399,7 @@
 
                         <td>${f.acquired_disposed ?? ''}</td>
 
-                        <td>${f.date_acquisition_disposed ?? ''}</td>
+                        <td> ${f.timestamps?.created_at ?? ''}</td>
 
                         <td class="text-center">
                             <span class="badge ${
@@ -416,7 +416,7 @@
                         <td class="text-center"> ${currentHolder.username ?? ''}</td>
 
                         <td class="text-center">
-                            ${f.timestamps?.updated_at ? f.timestamps.updated_at.split(" ")[0] : ''}
+                            ${f.timestamps?.updated_at ?? ''}
                         </td>
 
                         <td>${f.remarks ?? ''}</td>
@@ -643,9 +643,9 @@
                         </li>
                         <!-- END timeline item -->
                 `
-            }).join("");
+                }).join("");
         }
-        
+
         async function openFormHistory(formId) {
             if (!formId) {
                 showAlert("Form ID not found", "danger");

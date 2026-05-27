@@ -655,9 +655,14 @@
             const generateBtn =
                 document.getElementById('generatebtn');
 
+            const correctOMContainer =
+                document.getElementById('correctOM-container');
+
             /* =========================================
                DEFAULT HIDE
             ========================================= */
+
+            correctOMContainer?.classList.add('d-none');
 
             forwardBtn?.classList.add('d-none');
 
@@ -760,12 +765,15 @@
                     ===================================== */
                     else if (canTakeAction) {
 
+
                         /* =================================
                            CURRENT HOLDER
                            Forward + Reject
                         ================================= */
 
                         if (isCurrentHolder) {
+
+                            correctOMContainer?.classList.remove('d-none');
 
                             forwardBtn?.classList.remove('d-none');
 
@@ -1064,6 +1072,7 @@
             if (action.includes("submit") || action.includes("created")) return "green";
             if (action.includes("pull")) return "yellow";
             if (action.includes("draft")) return "gray";
+            if (action.includes("generate")) return "green";
 
             return "aqua";
         }
@@ -1086,10 +1095,10 @@
             }
 
             if (action.includes('reject')) {
-                return 'fa-times';
+                return 'fa-close';
             }
 
-            if (action.includes('approve')) {
+            if (action.includes('generate')) {
                 return 'fa-thumbs-up';
             }
 
@@ -1136,6 +1145,10 @@
                     const fieldName = escapeHtml(item.field_name || "");
                     const badgeClass = statusClass(item.action_type);
                     const iconClass = getTimelineIcon(item.action_type);
+
+                    console.log('action', action)
+                    console.log('badgeClass', badgeClass)
+                    console.log('iconClass', iconClass)
 
                     return `
                         <!-- timeline time label -->
