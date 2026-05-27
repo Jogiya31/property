@@ -75,7 +75,7 @@ try {
 
         !empty($form['opened_at'])
 
-        && strtotime($form['opened_at']) < strtotime('-1 minute')
+        && strtotime($form['opened_at']) < strtotime('-1 day')
 
     ) {
 
@@ -146,7 +146,7 @@ try {
 
                 is_locked = true
 
-                AND opened_at < NOW() - INTERVAL '1 minute'
+                AND opened_at < NOW() - INTERVAL '1 day'
             )
         )
     ");

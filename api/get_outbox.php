@@ -48,7 +48,7 @@ try {
 
             AND opened_at IS NOT NULL
 
-            AND opened_at < NOW() - INTERVAL '1 minute'
+            AND opened_at < NOW() - INTERVAL '1 day'
 
     ");
 
