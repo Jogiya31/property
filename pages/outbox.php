@@ -531,6 +531,7 @@
             if (action.includes("submit") || action.includes("created")) return "green";
             if (action.includes("pull")) return "yellow";
             if (action.includes("draft")) return "gray";
+            if (action.includes("generate")) return "green";
 
             return "aqua";
         }
@@ -556,7 +557,7 @@
                 return 'fa-times';
             }
 
-            if (action.includes('approve')) {
+            if (action.includes('generate')) {
                 return 'fa-thumbs-up';
             }
 
